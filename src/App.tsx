@@ -10,6 +10,25 @@ import { Leagues } from './components/dashboard/pages/Leagues'
 import { Betting } from './components/dashboard/pages/Betting'
 import { Standings } from './components/dashboard/pages/Standings'
 import { LeagueDetailsPage } from './components/dashboard/pages/LeagueDetailsPage'
+import { Tournaments } from './components/dashboard/pages/TournamentsPage'
+import { TournamentDetailsPage } from './components/dashboard/pages/TournamentDetailsPage'
+import { ProfilePage } from './components/dashboard/pages/ProfilePage'
+import { TermsPage } from './pages/TermsPage'
+import { PrivacyPage } from './pages/PrivacyPage'
+import { ContactPage } from './pages/ContactPage'
+import { AboutPage } from './pages/AboutPage'
+import { Information } from './components/dashboard/pages/Information'
+import { Toaster } from 'react-hot-toast'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+})
 
 function HomeWrapper() {
   const { user, loading } = useAuth()
@@ -42,12 +61,20 @@ function AppLinks() {
         </ProtectedRoute>
       }>
         <Route path="/overview" element={<Overview />} />
+        <Route path="/tournaments" element={<Tournaments />} />
+        <Route path="/tournaments/:id" element={<TournamentDetailsPage />} />
         <Route path="/leagues" element={<Leagues />} />
         <Route path="/leagues/:id" element={<LeagueDetailsPage />} />
         <Route path="/betting" element={<Betting />} />
         <Route path="/standings" element={<Standings />} />
+        <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/information" element={<Information />} />
       </Route>
 
+      <Route path="/terms" element={<TermsPage />} />
+      <Route path="/privacy" element={<PrivacyPage />} />
+      <Route path="/contact" element={<ContactPage />} />
+      <Route path="/about" element={<AboutPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
@@ -55,11 +82,14 @@ function AppLinks() {
 
 function App() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <AppLinks />
-      </AuthProvider>
-    </BrowserRouter>
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <AuthProvider>
+          <AppLinks />
+          <Toaster position="top-center" />
+        </AuthProvider>
+      </BrowserRouter>
+    </QueryClientProvider>
   )
 }
 

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { syncUser } from '../lib/api'
 
 export function AuthCallbackPage() {
   const navigate = useNavigate()
@@ -12,7 +13,7 @@ export function AuthCallbackPage() {
       try {
         // Supabase hanterar token exchange automatiskt
         const { data, error } = await supabase.auth.getSession()
-        
+
         if (error) {
           console.error('Auth callback error:', error)
           setError(error.message)
@@ -22,6 +23,15 @@ export function AuthCallbackPage() {
 
         if (data.session) {
           console.log('Session retrieved:', data.session.user.email)
+
+          try {
+            await syncUser(data.session.access_token)
+            console.log('User synced with backend')
+          } catch (syncError) {
+            console.error('Failed to sync user:', syncError)
+            // Vi fortsätter ändå, eftersom vi har en session
+          }
+
           // Redirect till home
           navigate('/', { replace: true })
         } else {
