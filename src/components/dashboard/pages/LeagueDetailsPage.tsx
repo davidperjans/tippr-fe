@@ -1,163 +1,317 @@
+import { useParams, useNavigate } from "react-router-dom"
+import { useLeague, useLeagueStandings, useLeaveLeague, useDeleteLeague } from "@/hooks/api"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Loader2, Users, Copy, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { useState } from "react"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { useAuth } from "@/contexts/AuthContext"
+import { toast } from "react-hot-toast"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Users, Settings, MessageSquare, Copy, Send, ArrowLeft } from 'lucide-react'
-import { Link, useParams } from 'react-router-dom'
+import { Label } from "@/components/ui/label"
 
 export function LeagueDetailsPage() {
-  const { id } = useParams()
-  // Mock data based on ID - in reality fetch from API
-  const leagueName = "Kompisligan"
+    const { id } = useParams<{ id: string }>()
+    const { data: league, isLoading: leagueLoading } = useLeague(id!)
+    const { data: standings, isLoading: standingsLoading } = useLeagueStandings(id!)
+    const [copied, setCopied] = useState(false)
 
-  return (
-    <div className="h-full flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {/* Header */}
-      <div className="flex flex-col gap-4 mb-6">
-        <Link to="/leagues" className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors">
-            <ArrowLeft className="w-4 h-4" /> Tillbaka
-        </Link>
-        <div className="flex items-start justify-between">
-            <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center text-white font-bold text-xl shadow-lg">
-                    {leagueName[0]}
-                </div>
+    if (leagueLoading) {
+        return (
+            <div className="flex h-[50vh] items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        )
+    }
+
+    if (!league) {
+        return <div className="text-center p-8">Ligan hittades inte</div>
+    }
+
+    const copyInviteCode = () => {
+        if (league.id) {
+            navigator.clipboard.writeText(league.id)
+            setCopied(true)
+            setTimeout(() => setCopied(false), 2000)
+        }
+    }
+
+    return (
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">{leagueName}</h1>
-                    <div className="flex items-center gap-2 text-muted-foreground text-sm">
-                        <Users className="w-4 h-4" /> 12 Deltagare • ID: {id}
+                    <div className="flex items-center gap-3 mb-2">
+                        <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center text-white font-bold text-xl shadow-lg">
+                            {(league.name || 'L')[0]?.toUpperCase()}
+                        </div>
+                        <div>
+                            <h1 className="text-3xl font-bold tracking-tight">{league.name}</h1>
+                            <div className="flex items-center text-muted-foreground text-sm">
+                                <Users className="w-4 h-4 mr-1" />
+                                <span>{league.memberCount || standings?.length || 0} deltagare</span>
+                                <span className="mx-2">•</span>
+                                <span>{league.isPublic ? 'Publik' : 'Privat'}</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <Button variant="outline" className="gap-2 hidden sm:flex" onClick={() => navigator.clipboard.writeText("XYZ-123")}>
-                <Copy className="w-4 h-4" /> Bjud in (Kod: XYZ-123)
-            </Button>
-        </div>
-      </div>
 
-      {/* Tabs */}
-      <Tabs defaultValue="scoreboard" className="flex-1 flex flex-col min-h-0">
-        <TabsList className="grid w-full grid-cols-3 max-w-[400px] mb-4">
-          <TabsTrigger value="scoreboard">Poängställning</TabsTrigger>
-          <TabsTrigger value="chat">Chatt</TabsTrigger>
-          <TabsTrigger value="settings">Inställningar</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="scoreboard" className="flex-1 min-h-0">
-            <Card className="h-full flex flex-col">
-                <CardHeader>
-                    <CardTitle>Tabell</CardTitle>
-                    <CardDescription>Aktuell ställning i {leagueName}.</CardDescription>
-                </CardHeader>
-                <CardContent className="flex-1 p-0">
-                    <div className="overflow-auto h-[500px]"> {/* Fixed height or flex-1 if parent supports it */}
-                        <table className="w-full text-sm">
-                            <thead className="bg-muted/50 sticky top-0 z-10">
-                                <tr className="border-b">
-                                    <th className="h-10 px-4 text-left font-medium w-16">#</th>
-                                    <th className="h-10 px-4 text-left font-medium">Spelare</th>
-                                    <th className="h-10 px-4 text-center font-medium">Rätt</th>
-                                    <th className="h-10 px-4 text-right font-medium">Poäng</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {[
-                                    { rank: 1, name: "David P", points: 154, correct: 18, me: true },
-                                    { rank: 2, name: "Kalle", points: 148, correct: 16, me: false },
-                                    { rank: 3, name: "Lisa", points: 142, correct: 16, me: false },
-                                    { rank: 4, name: "Erik", points: 130, correct: 14, me: false },
-                                    { rank: 5, name: "Anna", points: 125, correct: 12, me: false },
-                                    // ... more mock data
-                                ].map((row) => (
-                                    <tr key={row.rank} className={`border-b last:border-0 hover:bg-muted/30 transition-colors ${row.me ? 'bg-primary/5' : ''}`}>
-                                        <td className="p-4 font-bold text-muted-foreground">{row.rank}</td>
-                                        <td className="p-4">
-                                            <div className="flex items-center gap-3">
-                                                <Avatar className="w-8 h-8">
-                                                    <AvatarFallback className={row.me ? "bg-primary text-primary-foreground" : ""}>
-                                                        {row.name[0]}
-                                                    </AvatarFallback>
-                                                </Avatar>
-                                                <div className="flex flex-col">
-                                                    <span className={`font-medium ${row.me ? 'text-primary' : ''}`}>{row.name} {row.me && '(Du)'}</span>
+                {!league.isPublic && (
+                    <Button variant="outline" onClick={copyInviteCode} className="gap-2">
+                        {copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+                        {copied ? 'Kopierat!' : 'Kopiera inbjudningskod'}
+                    </Button>
+                )}
+            </div>
+
+            <Tabs defaultValue="standings" className="w-full">
+                <TabsList>
+                    <TabsTrigger value="standings">Tabell</TabsTrigger>
+                    <TabsTrigger value="settings">Inställningar</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="standings" className="mt-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Tabell</CardTitle>
+                            <CardDescription>Aktuell ställning i ligan based på tippade matcher.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            {standingsLoading ? (
+                                <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin" /></div>
+                            ) : standings && standings.length > 0 ? (
+                                <div className="space-y-1">
+                                    {standings.map((user, index) => (
+                                        <div key={user.userId} className={`flex items-center justify-between p-3 rounded-lg ${index < 3 ? 'bg-muted/30' : 'hover:bg-muted/10'} transition-colors`}>
+                                            <div className="flex items-center gap-4">
+                                                <div className={`w-8 h-8 flex items-center justify-center font-bold rounded-full ${index === 0 ? 'bg-yellow-100 text-yellow-700' : index === 1 ? 'bg-slate-100 text-slate-700' : index === 2 ? 'bg-orange-100 text-orange-800' : 'text-muted-foreground'}`}>
+                                                    {index + 1}
+                                                </div>
+                                                <div className="flex items-center gap-3">
+                                                    <Avatar className="h-8 w-8">
+                                                        <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.username}`} />
+                                                        <AvatarFallback>{user.username?.[0]?.toUpperCase()}</AvatarFallback>
+                                                    </Avatar>
+                                                    <div className="font-semibold">{user.username || 'Anonym'}</div>
                                                 </div>
                                             </div>
-                                        </td>
-                                        <td className="p-4 text-center text-muted-foreground">{row.correct}</td>
-                                        <td className="p-4 text-right font-bold text-lg">{row.points}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </CardContent>
-            </Card>
-        </TabsContent>
-        
-        <TabsContent value="chat" className="flex-1 min-h-0">
-            <Card className="h-[600px] flex flex-col">
-                 <CardHeader className="py-4 border-b">
-                     <div className="flex items-center gap-2">
-                         <MessageSquare className="w-4 h-4" />
-                         <span className="font-bold">Liga-chatt</span>
-                     </div>
-                 </CardHeader>
-                 <CardContent className="flex-1 p-0 flex flex-col min-h-0">
-                     <ScrollArea className="flex-1 p-4">
-                        <div className="space-y-4">
-                            {[
-                                { user: "Kalle", time: "10:42", text: "Trodde verkligen Arsenal skulle ta det...", self: false },
-                                { user: "Lisa", time: "10:45", text: "Haha skyll dig själv som tippar med hjärtat!", self: false },
-                                { user: "Du", time: "10:48", text: "Jag klättrar sakta men säkert! 😎", self: true },
-                            ].map((msg, i) => (
-                                <div key={i} className={`flex gap-3 ${msg.self ? 'justify-end' : ''}`}>
-                                    {!msg.self && <Avatar className="w-8 h-8 mt-1"><AvatarFallback>K</AvatarFallback></Avatar>}
-                                    <div className={`rounded-xl p-3 max-w-[80%] text-sm ${msg.self ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
-                                        <div className="flex justify-between gap-4 mb-1 opacity-70 text-xs">
-                                            <span className="font-bold">{msg.user}</span>
-                                            <span>{msg.time}</span>
+                                            <div className="flex items-center gap-6 text-right">
+                                                <div className="hidden sm:block">
+                                                    <div className="text-xs text-muted-foreground uppercase tracking-wider">Matcher</div>
+                                                    <div className="font-mono">{user.matchPoints}p</div>
+                                                </div>
+                                                <div className="hidden sm:block">
+                                                    <div className="text-xs text-muted-foreground uppercase tracking-wider">Bonus</div>
+                                                    <div className="font-mono">{user.bonusPoints}p</div>
+                                                </div>
+                                                <div>
+                                                    <div className="text-xs text-muted-foreground uppercase tracking-wider font-bold">Totalt</div>
+                                                    <div className="font-bold text-lg text-emerald-600">{user.totalPoints}p</div>
+                                                </div>
+                                            </div>
                                         </div>
-                                        {msg.text}
-                                    </div>
+                                    ))}
                                 </div>
-                            ))}
-                        </div>
-                     </ScrollArea>
-                     <div className="p-4 border-t flex gap-2">
-                         <Input placeholder="Skriv ett meddelande..." className="flex-1" />
-                         <Button size="icon"><Send className="w-4 h-4" /></Button>
-                     </div>
-                 </CardContent>
-            </Card>
-        </TabsContent>
-        
-        <TabsContent value="settings">
-             <Card>
-                 <CardHeader>
-                     <CardTitle className="flex items-center gap-2"><Settings className="w-5 h-5" /> Inställningar</CardTitle>
-                     <CardDescription>Endast admins kan ändra dessa inställningar.</CardDescription>
-                 </CardHeader>
-                 <CardContent className="space-y-4">
-                     <div className="grid gap-2">
-                         <label className="text-sm font-medium">Liga Namn</label>
-                         <Input defaultValue={leagueName} />
-                     </div>
-                     <div className="grid gap-2">
-                         <label className="text-sm font-medium">Inbjudningskod</label>
-                         <div className="flex gap-2">
-                             <Input defaultValue="XYZ-123" readOnly />
-                             <Button variant="outline" size="icon"><Copy className="w-4 h-4" /></Button>
-                         </div>
-                     </div>
-                     <div className="pt-4 border-t">
-                         <Button variant="destructive">Radera Liga</Button>
-                     </div>
-                 </CardContent>
-             </Card>
-        </TabsContent>
-      </Tabs>
-    </div>
-  )
+                            ) : (
+                                <div className="text-center py-8 text-muted-foreground">
+                                    Inga resultat ännu. Börja tippa matcher!
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                <TabsContent value="settings">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Inställningar</CardTitle>
+                            <CardDescription>Hantera ditt medlemskap i ligan.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <LeagueSettings league={league} memberCount={standings?.length || 0} />
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+            </Tabs>
+        </div>
+    )
+}
+
+function LeagueSettings({ league, memberCount }: { league: any, memberCount: number }) {
+    useAuth() // keeping useAuth call if needed for effect, or remove if truly unused. Actually useAuth returns context. If I don't need anything, I can just not call it or not destructure.
+    // simpler: const { } = useAuth() or remove line if useAuth not needed.
+    // useAuth might be needed later? No, let's just remove the destructuring. 
+    // Wait, useAuth might trigger a re-render or check auth state? 
+    // It's a context hook.
+    // If I just remove "user", TS is happy.
+    // const { user } = useAuth() -> const { } = useAuth() is weird.
+    // Let's remove the line entirely if not used.
+    const leaveLeague = useLeaveLeague()
+    const deleteLeague = useDeleteLeague()
+    const navigate = useNavigate()
+
+    const isOwner = !!league.isOwner
+
+    return (
+        <div className="space-y-4">
+            {isOwner ? (
+                <div className="p-4 border border-red-200 bg-red-50 rounded-lg">
+                    <h3 className="font-semibold text-red-900 mb-2">Radera Liga</h3>
+                    <p className="text-sm text-red-800 mb-4">
+                        Radera hela ligan och alla dess poäng. Detta går inte att ångra.
+                    </p>
+
+                    <DeleteLeagueDialog
+                        leagueName={league.name}
+                        onConfirm={async () => {
+                            await deleteLeague.mutateAsync(league.id)
+                            toast.success("Ligan raderad")
+                            navigate('/leagues')
+                        }}
+                        isDeleting={deleteLeague.isPending}
+                        memberCount={memberCount}
+                    />
+                </div>
+            ) : (
+                <div className="p-4 border rounded-lg">
+                    <h3 className="font-semibold mb-2">Lämna Liga</h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                        Du kan lämna ligan när som helst. Dina poäng kommer att tas bort från tabellen.
+                    </p>
+
+                    <LeaveLeagueDialog
+                        onConfirm={async () => {
+                            try {
+                                await leaveLeague.mutateAsync(league.id)
+                                toast.success("Du har lämnat ligan")
+                                navigate('/leagues')
+                            } catch (error: any) {
+                                // Specific error handling for 404
+                                if (error.message?.includes("404")) {
+                                    toast.error("Kunde inte lämna ligan. API-fel (404).")
+                                } else {
+                                    toast.error("Kunde inte lämna ligan: " + (error.message || "Okänt fel"))
+                                }
+                            }
+                        }}
+                        isLeaving={leaveLeague.isPending}
+                    />
+                </div>
+            )}
+        </div>
+    )
+}
+
+function LeaveLeagueDialog({ onConfirm, isLeaving }: {
+    onConfirm: () => Promise<void>,
+    isLeaving: boolean
+}) {
+    const [open, setOpen] = useState(false)
+
+    const handleConfirm = async () => {
+        await onConfirm()
+        setOpen(false)
+    }
+
+    return (
+        <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+                <Button variant="destructive">Lämna Liga</Button>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Lämna Liga</DialogTitle>
+                    <DialogDescription>
+                        Är du säker på att du vill lämna ligan? Dina poäng kommer att nollställas om du går med igen senare.
+                    </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => setOpen(false)} disabled={isLeaving}>Avbryt</Button>
+                    <Button
+                        variant="destructive"
+                        onClick={handleConfirm}
+                        disabled={isLeaving}
+                    >
+                        {isLeaving && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+                        Lämna
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
+function DeleteLeagueDialog({ leagueName, onConfirm, isDeleting, memberCount }: {
+    leagueName: string,
+    onConfirm: () => Promise<void>,
+    isDeleting: boolean,
+    memberCount: number
+}) {
+    const [open, setOpen] = useState(false)
+    const [confirmName, setConfirmName] = useState("")
+
+    const handleConfirm = async () => {
+        if (confirmName !== leagueName) return
+        await onConfirm()
+        setOpen(false)
+    }
+
+    // Only force name check if there are other members (memberCount > 1, assuming owner is 1)
+    // Actually user said: "OM det är fler medlemmar med än bara admin" (so memberCount > 1).
+    // If strict compliance: if memberCount <= 1, maybe just confirm?
+    // User said: "vill att när admin ska klicka radera ska det först komma upp en varning sida OM det är fler medlemmar...". 
+    // Implies if only 1 member (admin), standard confirm might suffice? 
+    // But to be consistent and safe, let's use the dialog always but maybe simplify text if only 1 member? 
+    // User request focused on the case with multiple members. 
+    // Let's implement the dialog for all cases but emphasize the warning if members > 1.
+
+    // Simplification: Always use the safe dialog as it is good practice, but I will make the warning text reflect the member count.
+
+    return (
+        <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+                <Button variant="destructive">Radera Liga</Button>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Är du absolut säker?</DialogTitle>
+                    <DialogDescription className="space-y-3 pt-3">
+                        {memberCount > 1 && (
+                            <div className="p-3 bg-red-100/50 border border-red-200 rounded text-red-800 text-sm font-medium">
+                                Det finns {memberCount} medlemmar i denna liga. Om du raderar den förlorar alla sina poäng.
+                            </div>
+                        )}
+                        <p>
+                            Skriv in ligans namn <span className="font-bold select-all text-foreground">{leagueName}</span> nedan för att bekräfta radering.
+                        </p>
+                    </DialogDescription>
+                </DialogHeader>
+
+                <div className="py-4">
+                    <Label htmlFor="confirmName" className="sr-only">Ligans namn</Label>
+                    <Input
+                        id="confirmName"
+                        value={confirmName}
+                        onChange={(e) => setConfirmName(e.target.value)}
+                        placeholder={leagueName}
+                        className="font-mono"
+                    />
+                </div>
+
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => setOpen(false)} disabled={isDeleting}>Avbryt</Button>
+                    <Button
+                        variant="destructive"
+                        onClick={handleConfirm}
+                        disabled={confirmName !== leagueName || isDeleting}
+                    >
+                        {isDeleting && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+                        Radera ligan
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
 }

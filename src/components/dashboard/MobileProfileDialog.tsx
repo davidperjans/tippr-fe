@@ -13,15 +13,15 @@ import { useAuth } from "../../contexts/AuthContext"
 
 export function MobileProfileDialog() {
   const { user, signOut } = useAuth()
-  
+
   if (!user) return null
 
   return (
     <Dialog>
       <DialogTrigger asChild>
         <button className="flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors text-muted-foreground hover:text-foreground">
-           <User className="w-5 h-5 stroke-2" />
-           <span className="text-[10px] font-medium">Profil</span>
+          <User className="w-5 h-5 stroke-2" />
+          <span className="text-[10px] font-medium">Profil</span>
         </button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px] w-[90%] rounded-xl">
@@ -29,15 +29,17 @@ export function MobileProfileDialog() {
           <DialogTitle>Min Profil</DialogTitle>
         </DialogHeader>
         <div className="flex flex-col items-center py-6 gap-4">
-             <Avatar className="w-20 h-20">
-                <AvatarFallback className="text-2xl bg-gradient-to-tr from-emerald-400 to-cyan-400 text-white font-bold">
-                    {(user.user_metadata?.full_name?.[0] || user.email?.[0] || '').toUpperCase()}
-                </AvatarFallback>
-             </Avatar>
-             <div className="text-center">
-                 <h3 className="font-bold text-lg">{user.user_metadata?.full_name || 'Användare'}</h3>
-                 <p className="text-muted-foreground text-sm">{user.email}</p>
-             </div>
+          <Avatar className="w-20 h-20">
+            <AvatarFallback className="text-2xl bg-gradient-to-tr from-emerald-400 to-cyan-400 text-white font-bold">
+              {(user.user_metadata?.full_name?.[0] || user.email?.[0] || '').toUpperCase()}
+            </AvatarFallback>
+            {/* We need to get backendUser here to show avatar properly if we want consistency, but MobileProfileDialog currently only uses `useAuth().user`.
+                    I should update it to use `backendUser` as well. */}
+          </Avatar>
+          <div className="text-center">
+            <h3 className="font-bold text-lg">{user.user_metadata?.full_name || 'Användare'}</h3>
+            <p className="text-muted-foreground text-sm">{user.email}</p>
+          </div>
         </div>
         <DialogFooter className="flex-col gap-2">
           <Button variant="destructive" className="w-full gap-2" onClick={() => signOut()}>
