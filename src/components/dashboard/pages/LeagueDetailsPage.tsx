@@ -43,16 +43,26 @@ export function LeagueDetailsPage() {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <div className="flex items-center gap-3 mb-2">
-                        <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center text-white font-bold text-xl shadow-lg">
-                            {(league.name || 'L')[0]?.toUpperCase()}
-                        </div>
+                        {league.imageUrl ? (
+                            <div className="w-12 h-12 shrink-0">
+                                <img
+                                    src={league.imageUrl}
+                                    alt={league.name || 'League'}
+                                    className="w-full h-full object-contain"
+                                />
+                            </div>
+                        ) : (
+                            <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center text-white font-bold text-xl shadow-lg shrink-0">
+                                {(league.name || 'L')[0]?.toUpperCase()}
+                            </div>
+                        )}
                         <div>
                             <h1 className="text-3xl font-bold tracking-tight">{league.name}</h1>
                             <div className="flex items-center text-muted-foreground text-sm">
                                 <Users className="w-4 h-4 mr-1" />
                                 <span>{league.memberCount || standings?.length || 0} deltagare</span>
                                 <span className="mx-2">•</span>
-                                <span>{league.isPublic ? 'Publik' : 'Privat'}</span>
+                                <span>{league.isGlobal ? 'Global' : league.isPublic ? 'Publik' : 'Privat'}</span>
                             </div>
                         </div>
                     </div>
@@ -90,9 +100,11 @@ export function LeagueDetailsPage() {
                                                     {index + 1}
                                                 </div>
                                                 <div className="flex items-center gap-3">
-                                                    <Avatar className="h-8 w-8">
-                                                        <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.username}`} />
-                                                        <AvatarFallback>{user.username?.[0]?.toUpperCase()}</AvatarFallback>
+                                                    <Avatar className="h-11 w-11 border border-border/50">
+                                                        <AvatarImage src={user.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.username}`} className="object-cover" />
+                                                        <AvatarFallback className="bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 text-xs font-bold text-emerald-700">
+                                                            {user.username?.[0]?.toUpperCase()}
+                                                        </AvatarFallback>
                                                     </Avatar>
                                                     <div className="font-semibold">{user.username || 'Anonym'}</div>
                                                 </div>

@@ -119,6 +119,7 @@ export interface LeagueStandingDto {
     totalPoints: number;
     matchPoints: number;
     bonusPoints: number;
+    avatarUrl: string | null;
 }
 
 
@@ -189,7 +190,7 @@ export const api = {
         }),
         join: (token: string, id: string, inviteCode?: string) => fetchApi<boolean>(`leagues/${id}/join`, token, {
             method: 'POST',
-            body: JSON.stringify({ inviteCode })
+            body: JSON.stringify({ inviteCode: inviteCode || "" })
         }),
         leave: (token: string, id: string) => fetchApi<boolean>(`leagues/${id}/leave`, token, {
             method: 'POST'
