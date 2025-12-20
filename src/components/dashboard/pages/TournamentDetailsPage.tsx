@@ -3,9 +3,12 @@ import { useParams } from "react-router-dom"
 import { useMatches, useTournaments, useTournamentTeams } from "@/hooks/api"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Loader2, MapPin } from "lucide-react"
+import { Loader2 } from "lucide-react"
 import { MatchStatus } from "@/lib/api"
+
 import type { MatchDto } from "@/lib/api"
+import { type TeamStats } from "@/components/dashboard/components/StandingsTable"
+import { GroupStageLayout } from "@/components/dashboard/components/GroupStageLayout"
 
 
 export function TournamentDetailsPage() {
@@ -43,18 +46,6 @@ export function TournamentDetailsPage() {
     const sortedGroupNames = Object.keys(groups).sort()
 
     // --- Standings Calculation Logic ---
-    type TeamStats = {
-        id: string;
-        name: string;
-        logoUrl: string | null;
-        mp: number;
-        w: number;
-        d: number;
-        l: number;
-        gf: number;
-        ga: number;
-        pts: number;
-    }
 
     const calculateStandings = (matches: MatchDto[]) => {
         const stats: Record<string, TeamStats> = {}
@@ -110,6 +101,8 @@ export function TournamentDetailsPage() {
             return b.gf - a.gf
         })
     }
+
+    const standings = calculateStandings(groupMatches)
 
     const sortedTeams = teams ? [...teams].sort((a, b) => (a.fifaRank ?? 999) - (b.fifaRank ?? 999)) : []
 
@@ -298,168 +291,11 @@ export function TournamentDetailsPage() {
                                 <p className="text-muted-foreground">Inga gruppspelsmatcher hittades.</p>
                             )}
 
-                            {sortedGroupNames.map(groupName => {
-                                const groupMatchesList = groups[groupName]
-                                const standings = calculateStandings(groupMatchesList)
-
-                                return (
-                                    <Card key={groupName} className="overflow-hidden">
-                                        <CardHeader className="bg-muted/30 pb-4 border-b">
-                                            <CardTitle>{groupName.startsWith('Group') ? groupName : `Grupp ${groupName}`}</CardTitle>
-                                        </CardHeader>
-                                        <CardContent className="p-0">
-                                            <div className="grid grid-cols-1 xl:grid-cols-2 divide-y xl:divide-y-0 xl:divide-x">
-
-                                                {/* Left Column: Matches */}
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 overflow-y-auto max-h-[600px]">
-                                                    {groupMatchesList.map(match => (
-                                                        <div key={match.id} className="flex flex-col justify-between p-3 bg-muted/10 rounded-lg border hover:bg-muted/20 transition-colors text-sm min-h-[90px] gap-2">
-                                                            {/* Top Row: Teams & Score */}
-                                                            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-                                                                {/* Home Team */}
-                                                                <div className="flex items-center justify-end gap-2 text-right">
-                                                                    <span className="font-semibold hidden sm:inline truncate text-xs">{match.homeTeamName || 'Home'}</span>
-                                                                    <span className="font-semibold sm:hidden text-xs">{match.homeTeamName?.substring(0, 3).toUpperCase() || 'HOM'}</span>
-                                                                    {match.homeTeamLogoUrl ? (
-                                                                        <img src={match.homeTeamLogoUrl} alt={match.homeTeamName || ''} className="w-5 h-5 object-contain" />
-                                                                    ) : (
-                                                                        <div className="w-5 h-5 bg-muted rounded-full flex items-center justify-center text-[8px] ring-1 ring-border">H</div>
-                                                                    )}
-                                                                </div>
-
-                                                                {/* Center: Score */}
-                                                                <div className="flex items-center justify-center min-w-[40px]">
-                                                                    {(match.status === MatchStatus.InProgress || match.status === MatchStatus.Finished) && (
-                                                                        <div className="font-bold font-mono bg-muted/50 px-2 py-0.5 rounded text-xs border whitespace-nowrap">
-                                                                            {match.homeScore ?? 0} - {match.awayScore ?? 0}
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-
-                                                                {/* Away Team */}
-                                                                <div className="flex items-center justify-start gap-2 text-left">
-                                                                    {match.awayTeamLogoUrl ? (
-                                                                        <img src={match.awayTeamLogoUrl} alt={match.awayTeamName || ''} className="w-5 h-5 object-contain" />
-                                                                    ) : (
-                                                                        <div className="w-5 h-5 bg-muted rounded-full flex items-center justify-center text-[8px] ring-1 ring-border">A</div>
-                                                                    )}
-                                                                    <span className="font-semibold hidden sm:inline truncate text-xs">{match.awayTeamName || 'Away'}</span>
-                                                                    <span className="font-semibold sm:hidden text-xs">{match.awayTeamName?.substring(0, 3).toUpperCase() || 'AWY'}</span>
-                                                                </div>
-                                                            </div>
-
-                                                            {/* Bottom Row: Info (Date | Time | Venue) */}
-                                                            <div className="flex items-center justify-center gap-2 text-[10px] text-muted-foreground/60 border-t pt-2 mt-auto">
-                                                                <div className="flex items-center gap-1">
-                                                                    <span>{new Date(match.matchDate).toLocaleDateString('sv-SE', { month: 'short', day: 'numeric' })}</span>
-                                                                    <span className="opacity-50">|</span>
-                                                                    <span>{new Date(match.matchDate).toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' })}</span>
-                                                                </div>
-                                                                {match.venue && (
-                                                                    <>
-                                                                        <span className="opacity-50">|</span>
-                                                                        <div className="flex items-start gap-1 max-w-[150px] text-left">
-                                                                            <MapPin className="w-3 h-3 shrink-0 mt-0.5" />
-                                                                            <div className="flex flex-col leading-none gap-0.5">
-                                                                                <span className="truncate font-medium">{match.venue.split(',')[0].trim()}</span>
-                                                                                {match.venue.split(',')[1] && (
-                                                                                    <span className="truncate text-muted-foreground text-[9px]">{match.venue.split(',')[1].trim()}</span>
-                                                                                )}
-                                                                            </div>
-                                                                        </div>
-                                                                    </>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-
-                                                {/* Right Column: Standings Table */}
-                                                <div className="p-4 bg-muted/5 text-sm overflow-x-auto">
-                                                    <table className="w-full text-left border-collapse">
-                                                        <thead>
-                                                            <tr className="border-b text-muted-foreground text-xs uppercase tracking-wider">
-                                                                <th className="pb-2 pl-2 font-medium w-6">#</th>
-                                                                <th className="pb-2 pl-2 font-medium">Lag</th>
-                                                                <th className="pb-2 text-center font-medium" title="Matcher Spelade">M</th>
-                                                                <th className="pb-2 text-center font-medium" title="Vunna">V</th>
-                                                                <th className="pb-2 text-center font-medium" title="Oavgjorda">O</th>
-                                                                <th className="pb-2 text-center font-medium" title="Förlorade">F</th>
-                                                                <th className="pb-2 text-center font-medium" title="Målskillnad">+/-</th>
-                                                                <th className="pb-2 text-right pr-2 font-bold" title="Poäng">P</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody className="divide-y relative">
-                                                            {standings.map((team, idx) => {
-                                                                const totalTeams = standings.length
-
-                                                                // Qualification Logic: Left Border
-                                                                let rowClass = "hover:bg-muted/30 relative"
-                                                                let indicatorConfig = "border-l-4"
-
-                                                                if (idx === 0 || idx === 1) {
-                                                                    // 1st and 2nd place - green (always)
-                                                                    indicatorConfig = "border-l-4 border-green-500"
-                                                                } else if (idx === 2) {
-                                                                    // 3rd place - blue (always)
-                                                                    indicatorConfig = "border-l-4 border-blue-500"
-                                                                } else {
-                                                                    // 4th place or more - no border
-                                                                    indicatorConfig = "border-l-4 border-transparent"
-                                                                }
-
-                                                                // Zone Separators: Apply colored border-top to the row AFTER the separator
-                                                                let separatorClass = ""
-
-                                                                // Keep gray line ABOVE 2nd place (idx 1) - explicit gray
-                                                                if (idx === 1) {
-                                                                    separatorClass = "!border-t-border"
-                                                                }
-                                                                // Green line ABOVE 3rd place (idx 2)
-                                                                else if (idx === 2) {
-                                                                    separatorClass = "!border-t-green-500"
-                                                                }
-                                                                // Blue line ABOVE 4th place (idx 3) - only if 4 teams
-                                                                else if (idx === 3 && totalTeams > 3) {
-                                                                    separatorClass = "!border-t-blue-500"
-                                                                }
-
-                                                                return (
-                                                                    <tr key={team.id} className={`${rowClass} ${indicatorConfig} ${separatorClass}`}>
-                                                                        <td className="py-2 pl-2 text-xs text-muted-foreground w-6">{idx + 1}</td>
-                                                                        <td className="py-2 pl-2 flex items-center gap-2">
-                                                                            {team.logoUrl && <img src={team.logoUrl} className="w-5 h-5 object-contain" alt="" />}
-                                                                            <span className="font-medium truncate max-w-[100px] sm:max-w-[150px]">{team.name}</span>
-                                                                        </td>
-                                                                        <td className="py-2 text-center">{team.mp}</td>
-                                                                        <td className="py-2 text-center text-muted-foreground">{team.w}</td>
-                                                                        <td className="py-2 text-center text-muted-foreground">{team.d}</td>
-                                                                        <td className="py-2 text-center text-muted-foreground">{team.l}</td>
-                                                                        <td className="py-2 text-center text-muted-foreground">
-                                                                            {team.gf - team.ga > 0 ? '+' : ''}{team.gf - team.ga}
-                                                                        </td>
-                                                                        <td className="py-2 text-right pr-2 font-bold">{team.pts}</td>
-                                                                    </tr>
-                                                                )
-                                                            })}
-                                                        </tbody>
-                                                    </table>
-                                                    <div className="mt-4 flex gap-4 text-[10px] text-muted-foreground">
-                                                        <div className="flex items-center gap-1">
-                                                            <div className="w-1 h-3 bg-green-500"></div>
-                                                            <span>Till Slutspel (1-2)</span>
-                                                        </div>
-                                                        <div className="flex items-center gap-1">
-                                                            <div className="w-1 h-3 bg-blue-500"></div>
-                                                            <span>Ranking 3:or</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </CardContent>
-                                    </Card>
-                                )
-                            })}
+                            <GroupStageLayout
+                                groups={groups}
+                                standings={standings}
+                                mode="view"
+                            />
                         </TabsContent>
 
                         <TabsContent value="playoffs">

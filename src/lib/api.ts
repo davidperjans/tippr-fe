@@ -23,7 +23,30 @@ export interface LeagueDto {
     imageUrl: string | null;
     memberCount?: number;
     isOwner?: boolean;
+    isAdmin?: boolean;
+    settings?: LeagueSettingsDto;
 }
+
+export interface LeagueSettingsDto {
+    id: string;
+    leagueId: string;
+    predictionMode: PredictionMode;
+    deadlineMinutes: number;
+    pointsCorrectScore: number;
+    pointsCorrectOutcome: number;
+    pointsCorrectGoals: number;
+    pointsRoundOf16Team: number;
+    pointsQuarterFinalTeam: number;
+    pointsSemiFinalTeam: number;
+    pointsFinalTeam: number;
+    pointsTopScorer: number;
+    pointsWinner: number;
+    pointsMostGoalsGroup: number;
+    pointsMostConcededGroup: number;
+    allowLateEdits: boolean;
+}
+
+export type PredictionMode = 'AllAtOnce' | 'PerMatch';
 
 export interface CreateLeagueRequest {
     name: string;
@@ -198,7 +221,11 @@ export const api = {
         delete: (token: string, id: string) => fetchApi<boolean>(`leagues/${id}`, token, {
             method: 'DELETE'
         }),
-        standings: (token: string, id: string) => fetchApi<LeagueStandingDto[]>(`leagues/${id}/standings`, token)
+        standings: (token: string, id: string) => fetchApi<LeagueStandingDto[]>(`leagues/${id}/standings`, token),
+        updateSettings: (token: string, id: string, settings: Partial<LeagueSettingsDto>) => fetchApi<LeagueSettingsDto>(`leagues/${id}/settings`, token, {
+            method: 'PUT',
+            body: JSON.stringify(settings)
+        })
     },
     matches: {
         list: (token: string, tournamentId?: string, date?: string) => {

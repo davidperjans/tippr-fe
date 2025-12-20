@@ -2,7 +2,8 @@ import { useState, useRef } from 'react'
 import { useAuth } from '../../../contexts/AuthContext'
 import { useLeagues } from '../../../hooks/api'
 import { api, syncUser } from '@/lib/api'
-import { Trophy, User, Settings, Camera, Mail, Calendar, Activity, Loader2 } from 'lucide-react'
+import { Trophy, User, Settings, Camera, Mail, Calendar, Activity } from 'lucide-react'
+import { UserAvatar } from '@/components/UserAvatar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -19,13 +20,12 @@ export function ProfilePage() {
 
     const displayName = backendUser?.displayName || user?.user_metadata?.displayName || 'Användare'
     const email = user?.email
-    const initial = (displayName[0] || '').toUpperCase()
     const joinDate = user?.created_at ? new Date(user.created_at).toLocaleDateString('sv-SE', { year: 'numeric', month: 'long' }) : 'N/A'
     const avatarUrl = backendUser?.avatarUrl
 
     // Stats
     const leaguesCount = leagues?.length || 0
-    const ownedLeaguesCount = leagues?.filter(l => l.isOwner).length || 0
+    const ownedLeaguesCount = leagues?.filter(l => l.isOwner || l.ownerId === user?.id).length || 0
 
     const handleCameraClick = () => {
         fileInputRef.current?.click()
@@ -78,21 +78,15 @@ export function ProfilePage() {
                 <div className="relative px-6 -mt-16 md:-mt-20 flex flex-col md:flex-row items-center md:items-end gap-6">
                     {/* Avatar */}
                     <div className="relative">
-                        <div className="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-background bg-background shadow-xl flex items-center justify-center relative overflow-hidden">
-                            {avatarUrl ? (
-                                <img src={avatarUrl} alt={displayName} className="w-full h-full object-cover" />
-                            ) : (
-                                <div className="w-full h-full bg-gradient-to-br from-emerald-400 to-cyan-400 flex items-center justify-center text-4xl md:text-5xl font-bold text-white">
-                                    {initial}
-                                </div>
-                            )}
-
-                            {isUploading && (
-                                <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10 transition-opacity">
-                                    <Loader2 className="w-8 h-8 text-white animate-spin" />
-                                </div>
-                            )}
-                        </div>
+                        <UserAvatar
+                            user={{
+                                username: displayName,
+                                avatarUrl: avatarUrl,
+                                email: email
+                            }}
+                            className="w-32 h-32 md:w-40 md:h-40 border-4 border-background bg-background shadow-xl"
+                            fallbackClassName="text-4xl md:text-5xl font-bold text-white bg-gradient-to-br from-emerald-400 to-cyan-400"
+                        />
                         <button
                             onClick={handleCameraClick}
                             disabled={isUploading}
@@ -203,7 +197,7 @@ export function ProfilePage() {
                                     <div className="flex-1">
                                         <div className="flex items-center gap-2">
                                             <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">{league.name}</h3>
-                                            {league.isOwner && <span className="bg-amber-100 text-amber-700 text-[10px] px-1.5 py-0.5 rounded-full font-bold">ÄGARE</span>}
+                                            {(league.isOwner || league.ownerId === user?.id) && <span className="bg-amber-100 text-amber-700 text-[10px] px-1.5 py-0.5 rounded-full font-bold">ADMIN</span>}
                                         </div>
                                         <p className="text-sm text-muted-foreground line-clamp-1">{league.description || 'Ingen beskrivning'}</p>
                                     </div>

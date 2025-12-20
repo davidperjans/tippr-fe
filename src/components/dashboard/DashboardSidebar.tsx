@@ -1,4 +1,5 @@
-import { Home, Trophy, Target, BarChart2, LogOut, User, Globe, Info } from 'lucide-react'
+import { Home, Trophy, Target, BarChart2, LogOut, Globe, Info } from 'lucide-react'
+import { UserAvatar } from '../UserAvatar'
 import { useAuth } from '../../contexts/AuthContext'
 import { NavLink } from 'react-router-dom'
 
@@ -6,7 +7,6 @@ export function DashboardSidebar() {
   const { user, backendUser, signOut } = useAuth()
 
   const displayName = backendUser?.displayName || user?.user_metadata?.displayName || user?.email || 'Användare';
-  const initial = (displayName[0] || '').toUpperCase();
 
   const menuItems = [
     { path: '/overview', label: 'Översikt', icon: Home },
@@ -60,13 +60,15 @@ export function DashboardSidebar() {
             ${isActive ? 'bg-primary/5 border-primary/20 shadow-sm' : 'bg-muted/30 border-border/50 hover:bg-muted/50 hover:border-border'}
           `}
         >
-          <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-emerald-400 to-cyan-400 flex items-center justify-center text-xs font-bold text-white shadow-inner shrink-0 group-hover:scale-105 transition-transform overflow-hidden relative">
-            {backendUser?.avatarUrl ? (
-              <img src={backendUser.avatarUrl} alt={displayName} className="w-full h-full object-cover" />
-            ) : (
-              initial || <User className="w-4 h-4" />
-            )}
-          </div>
+          <UserAvatar
+            user={{
+              username: displayName,
+              avatarUrl: backendUser?.avatarUrl,
+              email: user?.email
+            }}
+            className="w-9 h-9 shadow-inner shrink-0 group-hover:scale-105 transition-transform overflow-hidden relative"
+            fallbackClassName="text-white bg-gradient-to-tr from-emerald-400 to-cyan-400"
+          />
           <div className="hidden lg:block overflow-hidden min-w-0 flex-1 text-left">
             <p className="text-sm font-semibold truncate text-foreground">{displayName}</p>
             <p className="text-xs text-muted-foreground truncate opacity-70 group-hover:opacity-100 transition-opacity">Visa profil</p>
