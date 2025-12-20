@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
-import type { CreateLeagueRequest, SubmitPredictionRequest } from '@/lib/api'
+import type { CreateLeagueRequest, SubmitPredictionRequest, LeagueSettingsDto } from '@/lib/api'
 import { supabase } from '@/lib/supabase'
 
 // Helper to get token
@@ -127,6 +127,22 @@ export function useMatches(tournamentId?: string, date?: string) {
         },
         // Only run if we have at least one filter, OR if we want to allow fetching all
         enabled: !!tournamentId || !!date
+    })
+}
+
+// --- Settings Hooks ---
+export function useUpdateLeagueSettings() {
+    const queryClient = useQueryClient()
+
+    return useMutation({
+        mutationFn: async ({ leagueId, settings }: { leagueId: string, settings: Partial<LeagueSettingsDto> }) => {
+            const token = await getToken()
+            return api.leagues.updateSettings(token, leagueId, settings)
+        },
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({ queryKey: ['leagues', variables.leagueId] })
+            queryClient.invalidateQueries({ queryKey: ['leagues'] })
+        }
     })
 }
 

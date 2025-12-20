@@ -5,12 +5,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Loader2, Users, Copy, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useState } from "react"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { useAuth } from "@/contexts/AuthContext"
 import { toast } from "react-hot-toast"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { LeagueChatPanel } from "../components/LeagueChatPanel"
+import { LeagueSettingsForm } from "../components/LeagueSettingsForm"
+import { UserStandingsTable } from "../components/UserStandingsTable"
 
 export function LeagueDetailsPage() {
     const { id } = useParams<{ id: string }>()
@@ -31,8 +32,11 @@ export function LeagueDetailsPage() {
     }
 
     const copyInviteCode = () => {
-        if (league.id) {
-            navigator.clipboard.writeText(league.id)
+        if (league.inviteCode && league.id) {
+            // Create a link that can be parsed by FindLeagueDialog
+            // Format: https://domain.com/leagues/{id}?inviteCode={code}
+            const link = `${window.location.origin}/leagues/${league.id}?inviteCode=${league.inviteCode}`
+            navigator.clipboard.writeText(link)
             setCopied(true)
             setTimeout(() => setCopied(false), 2000)
         }
@@ -76,95 +80,72 @@ export function LeagueDetailsPage() {
                 )}
             </div>
 
-            <Tabs defaultValue="standings" className="w-full">
-                <TabsList>
-                    <TabsTrigger value="standings">Tabell</TabsTrigger>
-                    <TabsTrigger value="settings">Inställningar</TabsTrigger>
-                </TabsList>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className={league.isGlobal ? "lg:col-span-3" : "lg:col-span-2"}>
+                    <Tabs defaultValue="standings" className="w-full">
+                        <TabsList>
+                            <TabsTrigger value="standings">Tabell</TabsTrigger>
+                            <TabsTrigger value="settings">Regler & Inställningar</TabsTrigger>
+                        </TabsList>
 
-                <TabsContent value="standings" className="mt-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Tabell</CardTitle>
-                            <CardDescription>Aktuell ställning i ligan based på tippade matcher.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            {standingsLoading ? (
-                                <div className="flex justify-center p-8"><Loader2 className="w-6 h-6 animate-spin" /></div>
-                            ) : standings && standings.length > 0 ? (
-                                <div className="space-y-1">
-                                    {standings.map((user, index) => (
-                                        <div key={user.userId} className={`flex items-center justify-between p-3 rounded-lg ${index < 3 ? 'bg-muted/30' : 'hover:bg-muted/10'} transition-colors`}>
-                                            <div className="flex items-center gap-4">
-                                                <div className={`w-8 h-8 flex items-center justify-center font-bold rounded-full ${index === 0 ? 'bg-yellow-100 text-yellow-700' : index === 1 ? 'bg-slate-100 text-slate-700' : index === 2 ? 'bg-orange-100 text-orange-800' : 'text-muted-foreground'}`}>
-                                                    {index + 1}
-                                                </div>
-                                                <div className="flex items-center gap-3">
-                                                    <Avatar className="h-11 w-11 border border-border/50">
-                                                        <AvatarImage src={user.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.username}`} className="object-cover" />
-                                                        <AvatarFallback className="bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 text-xs font-bold text-emerald-700">
-                                                            {user.username?.[0]?.toUpperCase()}
-                                                        </AvatarFallback>
-                                                    </Avatar>
-                                                    <div className="font-semibold">{user.username || 'Anonym'}</div>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-6 text-right">
-                                                <div className="hidden sm:block">
-                                                    <div className="text-xs text-muted-foreground uppercase tracking-wider">Matcher</div>
-                                                    <div className="font-mono">{user.matchPoints}p</div>
-                                                </div>
-                                                <div className="hidden sm:block">
-                                                    <div className="text-xs text-muted-foreground uppercase tracking-wider">Bonus</div>
-                                                    <div className="font-mono">{user.bonusPoints}p</div>
-                                                </div>
-                                                <div>
-                                                    <div className="text-xs text-muted-foreground uppercase tracking-wider font-bold">Totalt</div>
-                                                    <div className="font-bold text-lg text-emerald-600">{user.totalPoints}p</div>
-                                                </div>
-                                            </div>
+                        <TabsContent value="standings" className="mt-6">
+                            <UserStandingsTable
+                                title="Tabell"
+                                data={standings}
+                                isLoading={standingsLoading}
+                            />
+                        </TabsContent>
+
+
+
+                        <TabsContent value="settings" className="mt-6">
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Regler & Inställningar</CardTitle>
+                                    <CardDescription>Poängsystem och regler för denna liga.</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-8">
+                                    {league.settings ? (
+                                        <LeagueSettingsForm league={league} canEdit={!!(league.isOwner || league.isAdmin)} />
+                                    ) : (
+                                        <div className="text-center text-muted-foreground py-8">
+                                            Inga inställningar hittades för denna liga.
                                         </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="text-center py-8 text-muted-foreground">
-                                    Inga resultat ännu. Börja tippa matcher!
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
-                </TabsContent>
+                                    )}
 
-                <TabsContent value="settings">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Inställningar</CardTitle>
-                            <CardDescription>Hantera ditt medlemskap i ligan.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <LeagueSettings league={league} memberCount={standings?.length || 0} />
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-            </Tabs>
+                                    <div className="pt-6 border-t">
+                                        <h3 className="font-semibold text-lg mb-4">Lighantering</h3>
+                                        <LeagueSettings league={league} memberCount={standings?.length || 0} />
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+                    </Tabs>
+                </div>
+
+                {!league.isGlobal && (
+                    <div className="lg:col-span-1 space-y-6">
+                        <LeagueChatPanel leagueId={league.id} />
+                    </div>
+                )}
+            </div>
         </div>
     )
 }
 
 function LeagueSettings({ league, memberCount }: { league: any, memberCount: number }) {
-    useAuth() // keeping useAuth call if needed for effect, or remove if truly unused. Actually useAuth returns context. If I don't need anything, I can just not call it or not destructure.
-    // simpler: const { } = useAuth() or remove line if useAuth not needed.
-    // useAuth might be needed later? No, let's just remove the destructuring. 
-    // Wait, useAuth might trigger a re-render or check auth state? 
-    // It's a context hook.
-    // If I just remove "user", TS is happy.
-    // const { user } = useAuth() -> const { } = useAuth() is weird.
-    // Let's remove the line entirely if not used.
     const leaveLeague = useLeaveLeague()
     const deleteLeague = useDeleteLeague()
     const navigate = useNavigate()
 
+    // Permissions Logic
+    // Delete: Only Owner
+    // Edit: Owner or Admin (Admin check is done in parent TabsContent via canEdit prop)
+    // Leave: Everyone except Owner
+
     const isOwner = !!league.isOwner
+    // If not owner, check if user is admin via members list if possible, or trust league.isAdmin
+    // Note: league.isAdmin might be boolean for "is current user admin"
 
     return (
         <div className="space-y-4">
