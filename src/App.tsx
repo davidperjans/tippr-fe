@@ -1,10 +1,11 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
+import { ThemeProvider } from './components/theme/ThemeProvider'
 import { HomePage } from './pages/HomePage'
 import { LoginPage } from './pages/LoginPage'
 import { SignUpPage } from './pages/SignUpPage'
 import { AuthCallbackPage } from './pages/AuthCallbackPage'
-import { DashboardLayout } from './components/dashboard/DashboardLayout'
+import { AppShell } from './components/shell/AppShell'
 import { Overview } from './components/dashboard/pages/Overview'
 import { Leagues } from './components/dashboard/pages/Leagues'
 import { Betting } from './components/dashboard/pages/Betting'
@@ -32,16 +33,28 @@ const queryClient = new QueryClient({
 
 function HomeWrapper() {
   const { user, loading } = useAuth()
-  if (loading) return <div className="flex h-screen items-center justify-center">Laddar...</div>
-  // If user is logged in, redirect to Dashboard Overview
+  if (loading) return (
+    <div className="flex h-screen items-center justify-center bg-background">
+      <div className="flex flex-col items-center gap-4">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-brand-500 border-t-transparent" />
+        <span className="text-sm text-text-secondary">Laddar...</span>
+      </div>
+    </div>
+  )
   if (user) return <Navigate to="/overview" replace />
-  // Otherwise show Landing Page
   return <HomePage />
 }
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
-  if (loading) return <div className="flex h-screen items-center justify-center">Laddar...</div>
+  if (loading) return (
+    <div className="flex h-screen items-center justify-center bg-background">
+      <div className="flex flex-col items-center gap-4">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-brand-500 border-t-transparent" />
+        <span className="text-sm text-text-secondary">Laddar...</span>
+      </div>
+    </div>
+  )
   if (!user) return <Navigate to="/login" replace />
   return <>{children}</>
 }
@@ -57,7 +70,7 @@ function AppLinks() {
       {/* Dashboard Routes */}
       <Route element={
         <ProtectedRoute>
-          <DashboardLayout />
+          <AppShell />
         </ProtectedRoute>
       }>
         <Route path="/overview" element={<Overview />} />
@@ -83,12 +96,31 @@ function AppLinks() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <AuthProvider>
-          <AppLinks />
-          <Toaster position="top-center" />
-        </AuthProvider>
-      </BrowserRouter>
+      <ThemeProvider>
+        <BrowserRouter>
+          <AuthProvider>
+            <AppLinks />
+            <Toaster
+              position="top-center"
+              toastOptions={{
+                className: '!bg-bg-surface !text-text-primary !border !border-border-subtle !shadow-lg !rounded-xl',
+                success: {
+                  iconTheme: {
+                    primary: 'hsl(160 84% 39%)',
+                    secondary: 'white',
+                  },
+                },
+                error: {
+                  iconTheme: {
+                    primary: 'hsl(0 84% 60%)',
+                    secondary: 'white',
+                  },
+                },
+              }}
+            />
+          </AuthProvider>
+        </BrowserRouter>
+      </ThemeProvider>
     </QueryClientProvider>
   )
 }

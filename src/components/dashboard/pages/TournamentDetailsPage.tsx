@@ -2,38 +2,46 @@ import { useState } from "react"
 import { useParams } from "react-router-dom"
 import { useMatches, useTournaments, useTournamentTeams } from "@/hooks/api"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Loader2 } from "lucide-react"
+import { Card, CardContent } from "@/components/ui/card"
+import { Globe, Users, Trophy, Calendar, LayoutGrid, List, Sparkles } from "lucide-react"
 import { MatchStatus } from "@/lib/api"
+import { Skeleton } from "@/components/ui/skeleton"
+import { motion } from "framer-motion"
 
 import type { MatchDto } from "@/lib/api"
-import { type TeamStats } from "@/components/dashboard/components/StandingsTable"
+import { type TeamStats } from "@/components/standings/StandingsTable"
 import { GroupStageLayout } from "@/components/dashboard/components/GroupStageLayout"
+import { PlayoffBracket } from "../components/PlayoffBracket"
 
+function TournamentSkeleton() {
+    return (
+        <div className="space-y-6">
+            <div className="space-y-2">
+                <Skeleton className="h-10 w-64" />
+                <Skeleton className="h-4 w-96" />
+            </div>
+            <Skeleton className="h-48 rounded-2xl" />
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {Array.from({ length: 8 }).map((_, i) => (
+                    <Skeleton key={i} className="h-20 rounded-xl" />
+                ))}
+            </div>
+        </div>
+    )
+}
 
 export function TournamentDetailsPage() {
     const { id } = useParams<{ id: string }>()
-    // Fetch tournament info
     const { data: tournaments } = useTournaments()
     const tournament = tournaments?.find(t => t.id === id)
-
-    // Fetch teams
     const { data: teams, isLoading: isLoadingTeams } = useTournamentTeams(id!)
-
-    // Fetch all matches for this tournament
     const { data: matches, isLoading: isLoadingMatches } = useMatches(id)
 
-    const [viewMode, setViewMode] = useState<'ranking' | 'groups'>('ranking')
+    const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
 
     const isLoading = isLoadingMatches && isLoadingTeams && !tournament
 
-    if (isLoading) {
-        return (
-            <div className="flex h-[50vh] items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-        )
-    }
+    if (isLoading) return <TournamentSkeleton />
 
     // --- Matches Logic ---
     const groupMatches = matches?.filter(m => m.stage === 0) || []
@@ -45,11 +53,8 @@ export function TournamentDetailsPage() {
     })
     const sortedGroupNames = Object.keys(groups).sort()
 
-    // --- Standings Calculation Logic ---
-
     const calculateStandings = (matches: MatchDto[]) => {
         const stats: Record<string, TeamStats> = {}
-
         const ensureTeam = (id: string, name: string, logo: string | null) => {
             if (!stats[id]) {
                 stats[id] = { id, name, logoUrl: logo, mp: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0 }
@@ -57,9 +62,8 @@ export function TournamentDetailsPage() {
         }
 
         matches.forEach(m => {
-            const homeId = m.homeTeamId || `temp-home-${m.id}`;
-            const awayId = m.awayTeamId || `temp-away-${m.id}`;
-
+            const homeId = m.homeTeamId || `temp-home-${m.id}`
+            const awayId = m.awayTeamId || `temp-away-${m.id}`
             ensureTeam(homeId, m.homeTeamName || 'Home', m.homeTeamLogoUrl)
             ensureTeam(awayId, m.awayTeamName || 'Away', m.awayTeamLogoUrl)
 
@@ -76,20 +80,9 @@ export function TournamentDetailsPage() {
                 away.gf += aScore
                 away.ga += hScore
 
-                if (hScore > aScore) {
-                    home.w++
-                    home.pts += 3
-                    away.l++
-                } else if (hScore < aScore) {
-                    away.w++
-                    away.pts += 3
-                    home.l++
-                } else {
-                    home.d++
-                    home.pts += 1
-                    away.d++
-                    away.pts += 1
-                }
+                if (hScore > aScore) { home.w++; home.pts += 3; away.l++ }
+                else if (hScore < aScore) { away.w++; away.pts += 3; home.l++ }
+                else { home.d++; home.pts += 1; away.d++; away.pts += 1 }
             }
         })
 
@@ -103,184 +96,228 @@ export function TournamentDetailsPage() {
     }
 
     const standings = calculateStandings(groupMatches)
-
     const sortedTeams = teams ? [...teams].sort((a, b) => (a.fifaRank ?? 999) - (b.fifaRank ?? 999)) : []
+    const groupNames = Array.from(new Set(sortedTeams.map(t => t.groupName).filter(Boolean))).sort()
 
     return (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div>
-                <h1 className="text-3xl font-bold tracking-tight">{tournament?.name || 'Turnering'}</h1>
-                <p className="text-muted-foreground">Följ turneringen, se statistik och tippa matcher.</p>
-            </div>
+        <motion.div
+            className="space-y-8"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+        >
+            {/* Hero Header */}
+            <motion.div
+                className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-500 via-brand-600 to-brand-700 p-8 text-white shadow-xl shadow-brand-500/25"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+            >
+                <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+                <div
+                    className="absolute inset-0 opacity-10"
+                    style={{
+                        backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)',
+                        backgroundSize: '20px 20px'
+                    }}
+                />
 
-            <Tabs defaultValue="info" className="w-full">
+                <div className="relative z-10 flex flex-col md:flex-row md:items-center gap-6">
+                    {tournament?.logoUrl && (
+                        <div className="w-24 h-24 bg-white/20 backdrop-blur-sm rounded-2xl p-3 flex items-center justify-center shrink-0">
+                            <img src={tournament.logoUrl} alt="" className="w-full h-full object-contain" />
+                        </div>
+                    )}
+                    <div>
+                        <div className="flex items-center gap-2 mb-2">
+                            <Sparkles className="w-4 h-4 text-brand-200" />
+                            <span className="text-sm font-medium text-brand-200">Turnering</span>
+                        </div>
+                        <h1 className="text-3xl md:text-4xl font-bold tracking-tight">{tournament?.name || 'Turnering'}</h1>
+                        <p className="text-brand-100 mt-2 max-w-lg">
+                            Följ turneringen, se statistik och tippa matcher.
+                        </p>
+                    </div>
+                </div>
+
+                {/* Quick Stats */}
+                <div className="relative z-10 mt-6 pt-6 border-t border-white/20 grid grid-cols-3 gap-6">
+                    {[
+                        { icon: Users, value: sortedTeams.length, label: 'Lag' },
+                        { icon: Trophy, value: groupNames.length, label: 'Grupper' },
+                        { icon: Calendar, value: matches?.length || 0, label: 'Matcher' },
+                    ].map((stat, i) => (
+                        <div key={i} className="text-center">
+                            <stat.icon className="w-5 h-5 mx-auto mb-1 text-brand-200" />
+                            <div className="text-2xl font-bold">{stat.value}</div>
+                            <div className="text-xs text-brand-200">{stat.label}</div>
+                        </div>
+                    ))}
+                </div>
+            </motion.div>
+
+            <Tabs defaultValue="teams" className="w-full">
                 <TabsList className="grid w-full grid-cols-2 lg:w-[400px]">
-                    <TabsTrigger value="info">Information</TabsTrigger>
+                    <TabsTrigger value="teams">Deltagande Lag</TabsTrigger>
                     <TabsTrigger value="matches">Matcher</TabsTrigger>
                 </TabsList>
 
-                {/* --- Information Tab --- */}
-                <TabsContent value="info" className="space-y-6 mt-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Om Turneringen</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="flex flex-col md:flex-row gap-6 items-start">
-                                {tournament?.logoUrl && (
-                                    <div className="w-32 h-32 shrink-0 bg-muted/10 rounded-xl overflow-hidden p-4 border flex items-center justify-center">
-                                        <img src={tournament.logoUrl} alt={tournament.name || ''} className="w-full h-full object-contain" />
-                                    </div>
-                                )}
-                                <div>
-                                    <p className="text-muted-foreground leading-relaxed">
-                                        Välkommen till {tournament?.name}! Här samlas världens bästa lag för att göra upp om titeln.
-                                        Följ spänningen, resultaten och se hur det går för dina favoriter.
-                                    </p>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <div className="space-y-6">
-                        <div className="max-w-2xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-                            <h2 className="text-xl font-semibold tracking-tight">Deltagande Lag</h2>
-                            <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-lg">
+                {/* Teams Tab */}
+                <TabsContent value="teams" className="mt-6">
+                    <motion.div
+                        className="space-y-6"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.2 }}
+                    >
+                        {/* View Toggle */}
+                        <div className="flex items-center justify-between">
+                            <h2 className="text-lg font-semibold text-text-primary">{sortedTeams.length} Deltagande Lag</h2>
+                            <div className="flex items-center gap-1 bg-bg-subtle p-1 rounded-lg">
                                 <button
-                                    onClick={() => setViewMode('ranking')}
-                                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${viewMode === 'ranking' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground/80'}`}
+                                    onClick={() => setViewMode('grid')}
+                                    className={`p-2 rounded-md transition-all ${viewMode === 'grid' ? 'bg-bg-surface shadow-sm text-text-primary' : 'text-text-tertiary hover:text-text-primary'}`}
                                 >
-                                    Ranking
+                                    <LayoutGrid className="w-4 h-4" />
                                 </button>
                                 <button
-                                    onClick={() => setViewMode('groups')}
-                                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${viewMode === 'groups' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground/80'}`}
+                                    onClick={() => setViewMode('list')}
+                                    className={`p-2 rounded-md transition-all ${viewMode === 'list' ? 'bg-bg-surface shadow-sm text-text-primary' : 'text-text-tertiary hover:text-text-primary'}`}
                                 >
-                                    Grupper
+                                    <List className="w-4 h-4" />
                                 </button>
                             </div>
                         </div>
 
-                        {viewMode === 'ranking' ? (
-                            <Card className="w-fit mx-auto min-w-[350px] border-muted/60 shadow-sm">
-                                <CardContent className="p-0">
-                                    <div className="overflow-x-auto">
-                                        <table className="w-auto text-left text-sm">
-                                            <thead>
-                                                <tr className="border-b bg-muted/30 text-muted-foreground">
-                                                    <th className="py-2 px-4 font-medium whitespace-nowrap">Lag</th>
-                                                    <th className="py-2 px-4 font-medium text-right whitespace-nowrap text-muted-foreground/70">Grupp</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y">
-                                                {sortedTeams.map(team => {
-                                                    let badgeClass = "bg-muted text-muted-foreground border-transparent"
-                                                    if (team.fifaRank === 1) badgeClass = "bg-yellow-100 text-yellow-700 border-yellow-200/50"
-                                                    else if (team.fifaRank === 2) badgeClass = "bg-slate-100 text-slate-700 border-slate-200/50"
-                                                    else if (team.fifaRank === 3) badgeClass = "bg-orange-100 text-orange-800 border-orange-200/50"
-
-                                                    return (
-                                                        <tr key={team.id} className="hover:bg-muted/30 transition-colors group">
-                                                            <td className="py-2.5 px-4 pr-12">
-                                                                <div className="flex items-center gap-3">
-                                                                    <div className="w-8 h-6 flex-shrink-0 relative flex items-center justify-center bg-muted/10 rounded-sm overflow-hidden border shadow-sm">
-                                                                        {team.flagUrl ? (
-                                                                            <img src={team.flagUrl} alt="" className="w-full h-full object-cover" />
-                                                                        ) : (
-                                                                            <span className="text-[10px] font-bold">{team.code}</span>
-                                                                        )}
+                        {viewMode === 'grid' ? (
+                            // Premium Grid View - Teams organized by group
+                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+                                {groupNames.map((groupName, groupIndex) => (
+                                    <motion.div
+                                        key={groupName}
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: 0.1 + groupIndex * 0.05 }}
+                                    >
+                                        <Card className="overflow-hidden border-border-subtle hover:shadow-lg transition-shadow">
+                                            <div className="bg-gradient-to-r from-brand-500/10 to-brand-600/5 border-b border-border-subtle px-4 py-3">
+                                                <h3 className="font-bold text-text-primary flex items-center gap-2">
+                                                    <Globe className="w-4 h-4 text-brand-500" />
+                                                    Grupp {groupName}
+                                                </h3>
+                                            </div>
+                                            <CardContent className="p-0">
+                                                <div className="divide-y divide-border-subtle">
+                                                    {sortedTeams.filter(t => t.groupName === groupName).map((team, i) => (
+                                                        <motion.div
+                                                            key={team.id}
+                                                            className="flex items-center gap-3 p-3 hover:bg-bg-subtle/50 transition-colors group"
+                                                            initial={{ opacity: 0, x: -10 }}
+                                                            animate={{ opacity: 1, x: 0 }}
+                                                            transition={{ delay: 0.2 + i * 0.03 }}
+                                                        >
+                                                            <div className="w-8 h-6 rounded overflow-hidden border border-border-subtle shadow-sm shrink-0">
+                                                                {team.flagUrl ? (
+                                                                    <img src={team.flagUrl} alt="" className="w-full h-full object-cover" />
+                                                                ) : (
+                                                                    <div className="w-full h-full bg-bg-subtle flex items-center justify-center text-2xs font-bold text-text-tertiary">
+                                                                        {team.code}
                                                                     </div>
-
-                                                                    <div className="flex items-center gap-2">
-                                                                        <span className="font-medium text-foreground">{team.name}</span>
-
-                                                                        {team.fifaRank && (
-                                                                            <div className="group/tooltip relative inline-flex ml-1">
-                                                                                <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded border ${badgeClass} cursor-help tabular-nums tracking-tight`}>
-                                                                                    #{team.fifaRank}
-                                                                                </span>
-                                                                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max px-2 py-1 bg-popover text-popover-foreground text-xs rounded shadow-lg border hidden group-hover/tooltip:block z-50 whitespace-nowrap">
-                                                                                    {team.name} är rankade {team.fifaRank}:a i världen
-                                                                                </div>
-                                                                            </div>
-                                                                        )}
-                                                                    </div>
-                                                                </div>
-                                                            </td>
-                                                            <td className="py-2.5 px-4 text-right">
-                                                                {team.groupName ? (
-                                                                    <span className="bg-muted/50 text-muted-foreground px-2 py-0.5 rounded text-xs font-medium">Grupp {team.groupName}</span>
-                                                                ) : '-'}
-                                                            </td>
-                                                        </tr>
-                                                    )
-                                                })}
-                                                {sortedTeams.length === 0 && !isLoadingTeams && (
-                                                    <tr>
-                                                        <td colSpan={2} className="p-8 text-center text-muted-foreground">
-                                                            Inga lag hittades.
-                                                        </td>
-                                                    </tr>
-                                                )}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        ) : (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                                {Array.from(new Set(sortedTeams.map(t => t.groupName).filter(Boolean))).sort().map(groupName => (
-                                    <Card key={groupName} className="border-muted/60 shadow-sm overflow-hidden">
-                                        <div className="bg-muted/30 border-b px-4 py-2">
-                                            <h3 className="font-semibold text-sm">Grupp {groupName}</h3>
-                                        </div>
-                                        <CardContent className="p-0">
-                                            <table className="w-full text-sm">
-                                                <tbody className="divide-y">
-                                                    {sortedTeams.filter(t => t.groupName === groupName).map(team => (
-                                                        <tr key={team.id} className="hover:bg-muted/10 transition-colors">
-                                                            <td className="p-3">
-                                                                <div className="flex items-center gap-3">
-                                                                    <div className="w-6 h-4 flex-shrink-0 relative flex items-center justify-center bg-muted/10 rounded-sm overflow-hidden border">
-                                                                        {team.flagUrl ? (
-                                                                            <img src={team.flagUrl} alt="" className="w-full h-full object-cover" />
-                                                                        ) : (
-                                                                            <span className="text-[9px] font-bold">{team.code}</span>
-                                                                        )}
-                                                                    </div>
-                                                                    <div className="flex flex-col">
-                                                                        <span className="font-medium leading-none">{team.name}</span>
-                                                                        {team.fifaRank && (
-                                                                            <span className="text-[10px] text-muted-foreground mt-0.5">Rank #{team.fifaRank}</span>
-                                                                        )}
-                                                                    </div>
-                                                                </div>
-                                                            </td>
-                                                        </tr>
+                                                                )}
+                                                            </div>
+                                                            <div className="flex-1 min-w-0">
+                                                                <p className="font-medium text-sm text-text-primary truncate group-hover:text-brand-600 transition-colors">
+                                                                    {team.name}
+                                                                </p>
+                                                            </div>
+                                                            {team.fifaRank && (
+                                                                <span className={`text-2xs font-bold px-2 py-0.5 rounded-full ${team.fifaRank === 1 ? 'bg-amber-100 text-amber-700' :
+                                                                    team.fifaRank <= 3 ? 'bg-slate-100 text-slate-700' :
+                                                                        team.fifaRank <= 10 ? 'bg-brand-50 text-brand-700' :
+                                                                            'bg-bg-subtle text-text-tertiary'
+                                                                    }`}>
+                                                                    #{team.fifaRank}
+                                                                </span>
+                                                            )}
+                                                        </motion.div>
                                                     ))}
-                                                </tbody>
-                                            </table>
-                                        </CardContent>
-                                    </Card>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    </motion.div>
                                 ))}
                             </div>
+                        ) : (
+                            // List View - All teams in one clean table
+                            <Card className="overflow-hidden border-border-subtle">
+                                <div className="overflow-x-auto">
+                                    <table className="w-full">
+                                        <thead>
+                                            <tr className="bg-bg-subtle/50 border-b border-border-subtle">
+                                                <th className="text-left py-3 px-4 text-xs font-semibold text-text-tertiary uppercase tracking-wider">Rank</th>
+                                                <th className="text-left py-3 px-4 text-xs font-semibold text-text-tertiary uppercase tracking-wider">Lag</th>
+                                                <th className="text-left py-3 px-4 text-xs font-semibold text-text-tertiary uppercase tracking-wider">Grupp</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-border-subtle">
+                                            {sortedTeams.map((team, i) => (
+                                                <motion.tr
+                                                    key={team.id}
+                                                    className="hover:bg-bg-subtle/30 transition-colors"
+                                                    initial={{ opacity: 0, x: -10 }}
+                                                    animate={{ opacity: 1, x: 0 }}
+                                                    transition={{ delay: i * 0.02 }}
+                                                >
+                                                    <td className="py-3 px-4">
+                                                        <span className={`text-xs font-bold px-2 py-1 rounded ${team.fifaRank === 1 ? 'bg-amber-100 text-amber-700' :
+                                                            team.fifaRank && team.fifaRank <= 3 ? 'bg-slate-100 text-slate-700' :
+                                                                'bg-bg-subtle text-text-tertiary'
+                                                            }`}>
+                                                            #{team.fifaRank || '-'}
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-3 px-4">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-8 h-6 rounded overflow-hidden border border-border-subtle shadow-sm shrink-0">
+                                                                {team.flagUrl ? (
+                                                                    <img src={team.flagUrl} alt="" className="w-full h-full object-cover" />
+                                                                ) : (
+                                                                    <div className="w-full h-full bg-bg-subtle flex items-center justify-center text-2xs font-bold text-text-tertiary">
+                                                                        {team.code}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                            <span className="font-medium text-text-primary">{team.name}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="py-3 px-4">
+                                                        <span className="text-sm text-text-secondary bg-bg-subtle px-2 py-1 rounded">
+                                                            Grupp {team.groupName || '-'}
+                                                        </span>
+                                                    </td>
+                                                </motion.tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </Card>
                         )}
-                    </div>
+                    </motion.div>
                 </TabsContent>
 
-                {/* --- Matches Tab --- */}
+                {/* Matches Tab */}
                 <TabsContent value="matches" className="mt-6">
                     <Tabs defaultValue="groups" className="w-full">
                         <TabsList className="w-full justify-start border-b rounded-none h-auto p-0 bg-transparent gap-6">
                             <TabsTrigger
                                 value="groups"
-                                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-2"
+                                className="rounded-none border-b-2 border-transparent data-[state=active]:border-brand-500 data-[state=active]:bg-transparent px-0 py-2 text-text-primary"
                             >
                                 Gruppspel
                             </TabsTrigger>
                             <TabsTrigger
                                 value="playoffs"
-                                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-2"
+                                className="rounded-none border-b-2 border-transparent data-[state=active]:border-brand-500 data-[state=active]:bg-transparent px-0 py-2 text-text-primary"
                             >
                                 Slutspel
                             </TabsTrigger>
@@ -288,9 +325,8 @@ export function TournamentDetailsPage() {
 
                         <TabsContent value="groups" className="space-y-8 mt-6">
                             {sortedGroupNames.length === 0 && (
-                                <p className="text-muted-foreground">Inga gruppspelsmatcher hittades.</p>
+                                <p className="text-text-tertiary">Inga gruppspelsmatcher hittades.</p>
                             )}
-
                             <GroupStageLayout
                                 groups={groups}
                                 standings={standings}
@@ -299,15 +335,11 @@ export function TournamentDetailsPage() {
                         </TabsContent>
 
                         <TabsContent value="playoffs">
-                            <Card>
-                                <CardContent className="p-8 text-center text-muted-foreground">
-                                    Slutspelsträd kommer snart...
-                                </CardContent>
-                            </Card>
+                            <PlayoffBracket matches={matches || []} />
                         </TabsContent>
                     </Tabs>
                 </TabsContent>
             </Tabs>
-        </div>
+        </motion.div>
     )
 }
