@@ -161,7 +161,7 @@ export function PlayoffBracket({ matches }: PlayoffBracketProps) {
                                     {winner ? (
                                         <div className="flex items-center gap-2">
                                             {winner.logo ? (
-                                                <img src={winner.logo} alt={winner.name} className="h-7 w-7 rounded bg-white/5 object-contain" />
+                                                <img src={winner.logo} alt={winner.name ?? undefined} className="h-7 w-7 rounded bg-white/5 object-contain" />
                                             ) : (
                                                 <div className="h-7 w-7 rounded bg-white/5" />
                                             )}
@@ -279,7 +279,7 @@ function MatchCard({ match, isFinal }: { match: MatchDto | null; isFinal?: boole
             <div className="flex items-center justify-between">
                 <div className="flex min-w-0 items-center gap-2">
                     {match.homeTeamLogoUrl ? (
-                        <img src={match.homeTeamLogoUrl} alt={match.homeTeamName} className="h-7 w-7 rounded bg-white/5 object-contain" />
+                        <img src={match.homeTeamLogoUrl} alt={match.homeTeamName ?? undefined} className="h-7 w-7 rounded bg-white/5 object-contain" />
                     ) : (
                         <div className="h-7 w-7 rounded bg-white/5" />
                     )}
@@ -291,7 +291,7 @@ function MatchCard({ match, isFinal }: { match: MatchDto | null; isFinal?: boole
             <div className="mt-2 flex items-center justify-between">
                 <div className="flex min-w-0 items-center gap-2">
                     {match.awayTeamLogoUrl ? (
-                        <img src={match.awayTeamLogoUrl} alt={match.awayTeamName} className="h-7 w-7 rounded bg-white/5 object-contain" />
+                        <img src={match.awayTeamLogoUrl} alt={match.awayTeamName ?? undefined} className="h-7 w-7 rounded bg-white/5 object-contain" />
                     ) : (
                         <div className="h-7 w-7 rounded bg-white/5" />
                     )}
