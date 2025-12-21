@@ -8,17 +8,14 @@ import { AuthCallbackPage } from './pages/AuthCallbackPage'
 import { AppShell } from './components/shell/AppShell'
 import { Overview } from './components/dashboard/pages/Overview'
 import { Leagues } from './components/dashboard/pages/Leagues'
-import { Betting } from './components/dashboard/pages/Betting'
-import { Standings } from './components/dashboard/pages/Standings'
 import { LeagueDetailsPage } from './components/dashboard/pages/LeagueDetailsPage'
-import { Tournaments } from './components/dashboard/pages/TournamentsPage'
 import { TournamentDetailsPage } from './components/dashboard/pages/TournamentDetailsPage'
 import { ProfilePage } from './components/dashboard/pages/ProfilePage'
+import { Information } from './components/dashboard/pages/Information'
 import { TermsPage } from './pages/TermsPage'
 import { PrivacyPage } from './pages/PrivacyPage'
 import { ContactPage } from './pages/ContactPage'
 import { AboutPage } from './pages/AboutPage'
-import { Information } from './components/dashboard/pages/Information'
 import { Toaster } from 'react-hot-toast'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
@@ -41,7 +38,7 @@ function HomeWrapper() {
       </div>
     </div>
   )
-  if (user) return <Navigate to="/overview" replace />
+  if (user) return <Navigate to="/home" replace />
   return <HomePage />
 }
 
@@ -67,21 +64,24 @@ function AppLinks() {
       <Route path="/signup" element={<SignUpPage />} />
       <Route path="/auth/callback" element={<AuthCallbackPage />} />
 
-      {/* Dashboard Routes */}
+      {/* Dashboard Routes - New Structure */}
       <Route element={
         <ProtectedRoute>
           <AppShell />
         </ProtectedRoute>
       }>
-        <Route path="/overview" element={<Overview />} />
-        <Route path="/tournaments" element={<Tournaments />} />
-        <Route path="/tournaments/:id" element={<TournamentDetailsPage />} />
+        {/* Main Navigation */}
+        <Route path="/home" element={<Overview />} />
         <Route path="/leagues" element={<Leagues />} />
-        <Route path="/leagues/:id" element={<LeagueDetailsPage />} />
-        <Route path="/betting" element={<Betting />} />
-        <Route path="/standings" element={<Standings />} />
+        <Route path="/leagues/:id/*" element={<LeagueDetailsPage />} />
+        <Route path="/tournaments/:id" element={<TournamentDetailsPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/information" element={<Information />} />
+
+        {/* Legacy redirects */}
+        <Route path="/overview" element={<Navigate to="/home" replace />} />
+        <Route path="/betting" element={<Navigate to="/leagues" replace />} />
+        <Route path="/standings" element={<Navigate to="/leagues" replace />} />
       </Route>
 
       <Route path="/terms" element={<TermsPage />} />

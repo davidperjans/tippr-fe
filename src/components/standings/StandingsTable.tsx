@@ -37,14 +37,10 @@ export function StandingsTable({ teams, compact = false, showQualification = fal
                         <TableHead className="w-12 text-center text-text-tertiary font-medium">#</TableHead>
                         <TableHead className="text-text-tertiary font-medium">Lag</TableHead>
                         <TableHead className="w-10 text-center text-text-tertiary font-medium" title="Matcher Spelade">M</TableHead>
-                        {!compact && (
-                            <>
-                                <TableHead className="w-10 text-center text-text-tertiary font-medium hidden sm:table-cell" title="Vinster">V</TableHead>
-                                <TableHead className="w-10 text-center text-text-tertiary font-medium hidden sm:table-cell" title="Oavgjorda">O</TableHead>
-                                <TableHead className="w-10 text-center text-text-tertiary font-medium hidden sm:table-cell" title="Förluster">F</TableHead>
-                            </>
-                        )}
-                        <TableHead className="w-14 text-center text-text-tertiary font-medium hidden md:table-cell" title="Målskillnad">+/-</TableHead>
+                        <TableHead className="w-8 text-center text-text-tertiary font-medium hidden sm:table-cell" title="Vinster">V</TableHead>
+                        <TableHead className="w-8 text-center text-text-tertiary font-medium hidden sm:table-cell" title="Oavgjorda">O</TableHead>
+                        <TableHead className="w-8 text-center text-text-tertiary font-medium hidden sm:table-cell" title="Förluster">F</TableHead>
+                        <TableHead className="w-12 text-center text-text-tertiary font-medium hidden lg:table-cell" title="Målskillnad">+/-</TableHead>
                         <TableHead className="w-14 text-center font-bold text-text-primary">P</TableHead>
                     </TableRow>
                 </TableHeader>
@@ -92,14 +88,10 @@ export function StandingsTable({ teams, compact = false, showQualification = fal
                                     </div>
                                 </TableCell>
                                 <TableCell className="text-center text-text-secondary tabular-nums py-2">{team.mp}</TableCell>
-                                {!compact && (
-                                    <>
-                                        <TableCell className="text-center text-text-secondary tabular-nums hidden sm:table-cell py-2">{team.w}</TableCell>
-                                        <TableCell className="text-center text-text-secondary tabular-nums hidden sm:table-cell py-2">{team.d}</TableCell>
-                                        <TableCell className="text-center text-text-secondary tabular-nums hidden sm:table-cell py-2">{team.l}</TableCell>
-                                    </>
-                                )}
-                                <TableCell className="text-center text-text-tertiary tabular-nums hidden md:table-cell py-2">
+                                <TableCell className="text-center text-text-secondary tabular-nums hidden sm:table-cell py-2">{team.w}</TableCell>
+                                <TableCell className="text-center text-text-secondary tabular-nums hidden sm:table-cell py-2">{team.d}</TableCell>
+                                <TableCell className="text-center text-text-secondary tabular-nums hidden sm:table-cell py-2">{team.l}</TableCell>
+                                <TableCell className="text-center text-text-tertiary tabular-nums hidden lg:table-cell py-2">
                                     <span className={cn(
                                         "font-medium",
                                         (team.gf - team.ga) > 0 ? "text-success" : (team.gf - team.ga) < 0 ? "text-danger" : "text-text-tertiary"

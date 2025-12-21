@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
-import { Home, Trophy, Target, BarChart2, Globe, Info, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react'
+import { Home, Trophy, Target, BarChart2, Globe, Info, ChevronLeft, ChevronRight } from 'lucide-react'
 import { cva } from 'class-variance-authority'
 import { cn } from '../../lib/utils'
 
@@ -47,9 +47,7 @@ export function LeftRail() {
             <div className={cn("h-14 flex items-center border-b border-border-subtle", isCollapsed ? "justify-center px-2" : "px-4")}>
                 <div className="flex items-center gap-2.5">
                     <div className="relative">
-                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-400 via-brand-500 to-brand-600 flex items-center justify-center shadow-lg shadow-brand-500/30 shrink-0">
-                            <Sparkles className="w-4.5 h-4.5 text-white" />
-                        </div>
+                        <img src="/newLogo.svg" alt="Tippr" className="w-9 h-9 shrink-0" />
                     </div>
                     <div className={cn("transition-all duration-200 overflow-hidden", isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100")}>
                         <span className="text-lg font-bold tracking-tight text-text-primary">

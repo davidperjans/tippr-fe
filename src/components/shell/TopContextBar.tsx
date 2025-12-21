@@ -1,8 +1,41 @@
 import { Bell, Search, Command } from 'lucide-react'
+import { useLocation } from 'react-router-dom'
 import { ThemeToggle } from '../theme/ThemeProvider'
 import { UserDropdown } from './UserDropdown'
 
+// Map routes to Swedish labels
+const routeLabels: Record<string, string> = {
+    '/overview': 'Översikt',
+    '/tournaments': 'Turneringar',
+    '/leagues': 'Ligor',
+    '/betting': 'Betting',
+    '/standings': 'Topplista',
+    '/profile': 'Profil',
+    '/information': 'Information',
+}
+
+function getPageLabel(pathname: string): string {
+    // Exact match first
+    if (routeLabels[pathname]) {
+        return routeLabels[pathname]
+    }
+
+    // Handle dynamic routes like /tournaments/:id or /leagues/:id
+    const segments = pathname.split('/')
+    if (segments.length >= 2) {
+        const baseRoute = `/${segments[1]}`
+        if (routeLabels[baseRoute]) {
+            return routeLabels[baseRoute]
+        }
+    }
+
+    return 'Översikt'
+}
+
 export function TopContextBar() {
+    const location = useLocation()
+    const pageLabel = getPageLabel(location.pathname)
+
     return (
         <header className="h-14 border-b border-border-subtle bg-bg-surface/80 backdrop-blur-xl sticky top-0 z-30 flex items-center justify-between px-4 md:px-6">
             {/* Left: Breadcrumbs or Context Title */}
@@ -10,7 +43,7 @@ export function TopContextBar() {
                 <div className="hidden md:flex items-center text-sm font-medium">
                     <span className="text-text-tertiary">Dashboard</span>
                     <span className="mx-2 text-text-tertiary/50">/</span>
-                    <span className="text-text-primary font-semibold">Översikt</span>
+                    <span className="text-text-primary font-semibold">{pageLabel}</span>
                 </div>
             </div>
 

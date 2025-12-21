@@ -1,11 +1,11 @@
-import { useParams, useNavigate } from "react-router-dom"
-import { useLeague, useLeagueStandings, useLeaveLeague, useDeleteLeague } from "@/hooks/api"
+import { useParams, useNavigate, useLocation, Routes, Route, Link, Navigate } from "react-router-dom"
+import { useLeague, useLeagueStandings, useLeaveLeague, useDeleteLeague, getToken } from "@/hooks/api"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Loader2, Users, Copy, Check, Shield, Trophy } from "lucide-react"
+import { Loader2, Users, Copy, Check, Shield, Trophy, ChevronRight, Target } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { toast } from "react-hot-toast"
+import { api } from "@/lib/api"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -13,12 +13,42 @@ import { LeagueChatPanel } from "../components/LeagueChatPanel"
 import { LeagueSettingsForm } from "../components/LeagueSettingsForm"
 import { UserStandingsTable } from "../components/UserStandingsTable"
 import { Badge } from "@/components/ui/badge"
+import { Breadcrumb } from "@/components/shell/Breadcrumb"
+import { Betting } from "./Betting"
+import { cn } from "@/lib/utils"
+
+const SECTION_LINKS = [
+    { path: "", label: "Översikt", icon: Trophy },
+    { path: "predictions", label: "Tippa", icon: Target },
+    { path: "rules", label: "Regler", icon: Shield },
+]
 
 export function LeagueDetailsPage() {
     const { id } = useParams<{ id: string }>()
+    const location = useLocation()
     const { data: league, isLoading: leagueLoading } = useLeague(id!)
-    const { data: standings, isLoading: standingsLoading } = useLeagueStandings(id!)
+    const { data: standings, isLoading: standingsLoading, refetch: refetchStandings } = useLeagueStandings(id!)
     const [copied, setCopied] = useState(false)
+
+    // Recalculate standings when visiting the league
+    useEffect(() => {
+        if (id) {
+            const recalculate = async () => {
+                try {
+                    const token = await getToken()
+                    await api.leagues.recalculateStandings(token, id)
+                    refetchStandings()
+                } catch (e) {
+                    // Silently fail - standings will show cached data
+                }
+            }
+            recalculate()
+        }
+    }, [id, refetchStandings])
+
+    // Determine current section from path
+    const pathParts = location.pathname.split('/')
+    const currentSection = pathParts[pathParts.length - 1] === id ? "" : pathParts[pathParts.length - 1]
 
     if (leagueLoading) {
         return (
@@ -41,15 +71,33 @@ export function LeagueDetailsPage() {
         }
     }
 
+    // Filter sections for global league (no chat)
+    const visibleSections = league.isGlobal
+        ? SECTION_LINKS.filter(s => s.path !== "chat")
+        : SECTION_LINKS
+
+    // Build breadcrumb
+    const breadcrumbItems = [
+        { label: "Ligor", to: "/leagues" },
+        { label: league.name || 'Liga' }
+    ]
+    if (currentSection && currentSection !== "") {
+        const sectionLabel = SECTION_LINKS.find(s => s.path === currentSection)?.label || currentSection
+        breadcrumbItems[1] = { label: league.name || 'Liga', to: `/leagues/${id}` }
+        breadcrumbItems.push({ label: sectionLabel })
+    }
+
     return (
-        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-12">
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-12">
+            {/* Breadcrumb */}
+            <Breadcrumb items={breadcrumbItems} />
 
             {/* Header Section */}
-            <div className="relative rounded-2xl bg-gradient-to-br from-brand-900 via-brand-800 to-indigo-900 p-8 shadow-xl overflow-hidden">
+            <div className="relative rounded-2xl bg-gradient-to-br from-brand-900 via-brand-800 to-indigo-900 p-6 md:p-8 shadow-xl overflow-hidden">
                 <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10" />
                 <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
-                    <div className="flex items-start gap-5">
-                        <div className="w-20 h-20 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center shadow-inner">
+                    <div className="flex items-start gap-4 md:gap-5">
+                        <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center shadow-inner shrink-0">
                             {league.imageUrl ? (
                                 <img
                                     src={league.imageUrl}
@@ -57,17 +105,17 @@ export function LeagueDetailsPage() {
                                     className="w-full h-full object-contain p-2"
                                 />
                             ) : (
-                                <span className="text-3xl font-bold text-white">{(league.name || 'L')[0]?.toUpperCase()}</span>
+                                <span className="text-2xl md:text-3xl font-bold text-white">{(league.name || 'L')[0]?.toUpperCase()}</span>
                             )}
                         </div>
                         <div>
-                            <div className="flex items-center gap-2 mb-1">
+                            <div className="flex items-center gap-2 mb-1 flex-wrap">
                                 {league.isGlobal && <Badge className="bg-amber-400/20 text-amber-200 border-amber-400/30 hover:bg-amber-400/30">Global</Badge>}
                                 {league.isOwner && <Badge className="bg-emerald-400/20 text-emerald-200 border-emerald-400/30 hover:bg-emerald-400/30">Ägare</Badge>}
                                 {!league.isPublic && <Badge variant="outline" className="border-white/20 text-white/70">Privat</Badge>}
                             </div>
-                            <h1 className="text-3xl md:text-4xl font-bold text-white tracking-tight mb-2">{league.name}</h1>
-                            <div className="flex items-center text-white/60 text-sm gap-4">
+                            <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white tracking-tight mb-2">{league.name}</h1>
+                            <div className="flex items-center text-white/60 text-sm gap-4 flex-wrap">
                                 <div className="flex items-center gap-1.5">
                                     <Users className="w-4 h-4" />
                                     <span>{league.memberCount || standings?.length || 0} deltagare</span>
@@ -93,66 +141,151 @@ export function LeagueDetailsPage() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Main Content (Standings & Settings) */}
-                <div className={league.isGlobal ? "lg:col-span-3" : "lg:col-span-2"}>
-                    <Tabs defaultValue="standings" className="w-full">
-                        <TabsList className="grid w-full grid-cols-2 mb-6 p-1 bg-bg-subtle/50 rounded-lg">
-                            <TabsTrigger value="standings" className="rounded-md">Tabell</TabsTrigger>
-                            <TabsTrigger value="settings" className="rounded-md">Regler & Inställningar</TabsTrigger>
-                        </TabsList>
+            {/* Section Switcher */}
+            <nav className="flex items-center gap-1 bg-bg-subtle/50 p-1 rounded-xl overflow-x-auto">
+                {visibleSections.map((section) => {
+                    const Icon = section.icon
+                    const isActive = currentSection === section.path
+                    const to = section.path ? `/leagues/${id}/${section.path}` : `/leagues/${id}`
 
-                        <TabsContent value="standings" className="space-y-6">
-                            <UserStandingsTable
-                                title="Tabell"
-                                data={standings}
-                                isLoading={standingsLoading}
+                    return (
+                        <Link
+                            key={section.path}
+                            to={to}
+                            className={cn(
+                                "flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap",
+                                isActive
+                                    ? "bg-bg-surface text-text-primary shadow-sm"
+                                    : "text-text-secondary hover:text-text-primary hover:bg-bg-surface/50"
+                            )}
+                        >
+                            <Icon className="w-4 h-4" />
+                            {section.label}
+                        </Link>
+                    )
+                })}
+            </nav>
+
+            {/* Content + Chat Sidebar Layout */}
+            <div className={cn(
+                "grid gap-6 items-start",
+                !league.isGlobal ? "lg:grid-cols-[1fr,320px]" : "grid-cols-1"
+            )}>
+                {/* Main Content Routes */}
+                <div className="min-w-0">
+                    <Routes>
+                        <Route index element={
+                            <LeagueOverview
+                                league={league}
+                                standings={standings}
+                                standingsLoading={standingsLoading}
                             />
-                        </TabsContent>
-
-                        <TabsContent value="settings">
-                            <Card className="border-border-subtle shadow-sm">
-                                <CardHeader>
-                                    <div className="flex items-center gap-3">
-                                        <div className="p-2 bg-brand-50 rounded-lg text-brand-600">
-                                            <Shield className="w-5 h-5" />
-                                        </div>
-                                        <div>
-                                            <CardTitle>Regler & Inställningar</CardTitle>
-                                            <CardDescription>Hantera ligans inställningar och medlemskap.</CardDescription>
-                                        </div>
-                                    </div>
-                                </CardHeader>
-                                <CardContent className="space-y-8">
-                                    {league.settings ? (
-                                        <LeagueSettingsForm league={league} canEdit={!!(league.isOwner || league.isAdmin)} />
-                                    ) : (
-                                        <div className="text-center text-text-tertiary py-8 border-2 border-dashed border-border-subtle rounded-xl">
-                                            Inga specifika inställningar för denna liga.
-                                        </div>
-                                    )}
-
-                                    <div className="pt-8 border-t border-border-subtle">
-                                        <h3 className="font-semibold text-text-primary mb-4 flex items-center gap-2">
-                                            <span className="w-1 h-5 bg-danger rounded-full" />
-                                            Riskzonen
-                                        </h3>
-                                        <LeagueSettings league={league} memberCount={standings?.length || 0} />
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        </TabsContent>
-                    </Tabs>
+                        } />
+                        <Route path="predictions" element={
+                            <LeaguePredictions leagueId={league.id} />
+                        } />
+                        <Route path="rules" element={
+                            <LeagueRules league={league} standings={standings} />
+                        } />
+                        {/* Redirect old chat route */}
+                        <Route path="chat" element={
+                            <Navigate to={`/leagues/${id}`} replace />
+                        } />
+                    </Routes>
                 </div>
 
-                {/* Sidebar (Chat) */}
+                {/* Chat Sidebar - sticky, only for non-global leagues */}
                 {!league.isGlobal && (
-                    <div className="lg:col-span-1">
+                    <div className="hidden lg:block sticky top-20 self-start">
                         <LeagueChatPanel leagueId={league.id} />
                     </div>
                 )}
             </div>
         </div>
+    )
+}
+
+// Sub-components for each section
+
+function LeagueOverview({ league, standings, standingsLoading }: {
+    league: any,
+    standings: any,
+    standingsLoading: boolean
+}) {
+    return (
+        <div className="space-y-6">
+            <UserStandingsTable
+                title="Tabell"
+                data={standings}
+                isLoading={standingsLoading}
+            />
+
+            {/* Tournament Link */}
+            {league.tournamentName && (
+                <Card className="border-border-subtle">
+                    <CardContent className="p-4">
+                        <Link
+                            to={`/tournaments/${league.tournamentId}`}
+                            className="flex items-center justify-between group"
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-lg bg-brand-50 flex items-center justify-center">
+                                    <Trophy className="w-5 h-5 text-brand-600" />
+                                </div>
+                                <div>
+                                    <p className="text-sm text-text-tertiary">Turnering</p>
+                                    <p className="font-semibold text-text-primary group-hover:text-brand-600 transition-colors">
+                                        {league.tournamentName}
+                                    </p>
+                                </div>
+                            </div>
+                            <ChevronRight className="w-5 h-5 text-text-tertiary group-hover:text-brand-600 transition-colors" />
+                        </Link>
+                    </CardContent>
+                </Card>
+            )}
+        </div>
+    )
+}
+
+function LeaguePredictions({ leagueId }: { leagueId: string }) {
+    // Re-use the existing Betting component but pass the league context
+    return <Betting preselectedLeagueId={leagueId} />
+}
+
+function LeagueRules({ league, standings }: { league: any, standings: any }) {
+
+    return (
+        <Card className="border-border-subtle shadow-sm">
+            <CardHeader>
+                <div className="flex items-center gap-3">
+                    <div className="p-2 bg-brand-50 rounded-lg text-brand-600">
+                        <Shield className="w-5 h-5" />
+                    </div>
+                    <div>
+                        <CardTitle>Regler & Inställningar</CardTitle>
+                        <CardDescription>Hantera ligans inställningar och medlemskap.</CardDescription>
+                    </div>
+                </div>
+            </CardHeader>
+            <CardContent className="space-y-8">
+                {league.settings ? (
+                    <LeagueSettingsForm league={league} canEdit={!!(league.isOwner || league.isAdmin)} />
+                ) : (
+                    <div className="text-center text-text-tertiary py-8 border-2 border-dashed border-border-subtle rounded-xl">
+                        Inga specifika inställningar för denna liga.
+                    </div>
+                )}
+
+                <div className="pt-8 border-t border-border-subtle">
+                    <h3 className="font-semibold text-text-primary mb-4 flex items-center gap-2">
+                        <span className="w-1 h-5 bg-danger rounded-full" />
+                        Riskzonen
+                    </h3>
+                    <LeagueSettings league={league} memberCount={standings?.length || 0} />
+                </div>
+            </CardContent>
+        </Card>
     )
 }
 

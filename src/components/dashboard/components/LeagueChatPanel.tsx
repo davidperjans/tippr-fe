@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useLayoutEffect, useMemo } from "react";
 import { HubConnection, HubConnectionState } from "@microsoft/signalr";
 import { Send, Loader2, AlertCircle } from "lucide-react";
-import { format } from "date-fns";
+import { format, isToday, isYesterday, differenceInDays, isThisWeek } from "date-fns";
 import { sv } from "date-fns/locale";
 
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,35 @@ import { toast } from "react-hot-toast";
 import { supabase } from "@/lib/supabase";
 import { chatService, type ChatMessage } from "@/services/chatService";
 import { useLeagueStandings } from "@/hooks/api";
+
+// Smart date formatting like real chat apps
+function formatMessageTime(date: Date): string {
+    const now = new Date();
+
+    if (isToday(date)) {
+        // Same day: just time
+        return format(date, 'HH:mm', { locale: sv });
+    }
+
+    if (isYesterday(date)) {
+        // Yesterday: "Igår 14:32"
+        return `Igår ${format(date, 'HH:mm', { locale: sv })}`;
+    }
+
+    if (isThisWeek(date, { locale: sv })) {
+        // Same week: "Mån 14:32"
+        return format(date, 'EEE HH:mm', { locale: sv });
+    }
+
+    const daysDiff = differenceInDays(now, date);
+    if (daysDiff < 365) {
+        // Within a year: "21 dec"
+        return format(date, 'd MMM', { locale: sv });
+    }
+
+    // Older than a year: "21 dec 2023"
+    return format(date, 'd MMM yyyy', { locale: sv });
+}
 
 interface LeagueChatPanelProps {
     leagueId: string;
@@ -133,7 +162,8 @@ export function LeagueChatPanel({ leagueId }: LeagueChatPanelProps) {
     useLayoutEffect(() => {
         // If we just finished initializing, or if we have new messages and should scroll
         if (!isInitializing && shouldAutoScroll && bottomRef.current) {
-            bottomRef.current.scrollIntoView({ behavior: isFirstLoad.current ? "auto" : "smooth" });
+            // Use block: 'end' and inline: 'nearest' to only scroll within container
+            bottomRef.current.scrollIntoView({ behavior: isFirstLoad.current ? "auto" : "smooth", block: 'end', inline: 'nearest' });
             setShouldAutoScroll(false);
             if (isFirstLoad.current) {
                 isFirstLoad.current = false;
@@ -232,7 +262,7 @@ export function LeagueChatPanel({ leagueId }: LeagueChatPanelProps) {
     }
 
     return (
-        <div className="flex flex-col h-[600px] border border-border-subtle rounded-xl bg-bg-surface overflow-hidden shadow-sm">
+        <div className="flex flex-col h-[calc(100vh-8rem)] max-h-[600px] border border-border-subtle rounded-xl bg-bg-surface overflow-hidden shadow-sm">
             {/* Header */}
             <div className="p-3 border-b border-border-subtle bg-bg-subtle/30 flex items-center justify-between z-10">
                 <h3 className="font-semibold text-sm text-text-primary">Ligachatt</h3>
@@ -286,7 +316,7 @@ export function LeagueChatPanel({ leagueId }: LeagueChatPanelProps) {
                                                     </span>
                                                 )}
                                             </div>
-                                            <span className="text-[10px] text-text-tertiary">{format(new Date(msg.createdAt), 'HH:mm', { locale: sv })}</span>
+                                            <span className="text-[10px] text-text-tertiary">{formatMessageTime(new Date(msg.createdAt))}</span>
                                         </div>
                                         <div className={`rounded-2xl px-3 py-2 text-sm shadow-sm whitespace-pre-wrap break-words ${isMyMessage
                                             ? 'bg-brand-600 text-white rounded-tr-none'

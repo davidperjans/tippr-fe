@@ -4,7 +4,7 @@ import type { CreateLeagueRequest, SubmitPredictionRequest, LeagueSettingsDto } 
 import { supabase } from '@/lib/supabase'
 
 // Helper to get token
-async function getToken() {
+export async function getToken() {
     const { data: { session } } = await supabase.auth.getSession()
     if (!session?.access_token) throw new Error('No access token')
     return session.access_token
@@ -163,6 +163,19 @@ export function useSubmitPrediction() {
         mutationFn: async (data: SubmitPredictionRequest) => {
             const token = await getToken()
             return api.predictions.submit(token, data)
+        },
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({ queryKey: ['predictions', { leagueId: variables.leagueId }] })
+        }
+    })
+}
+
+export function useUpdatePrediction() {
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationFn: async ({ id, homeScore, awayScore, leagueId: _leagueId }: { id: string; homeScore: number; awayScore: number; leagueId: string }) => {
+            const token = await getToken()
+            return api.predictions.update(token, id, { homeScore, awayScore })
         },
         onSuccess: (_, variables) => {
             queryClient.invalidateQueries({ queryKey: ['predictions', { leagueId: variables.leagueId }] })

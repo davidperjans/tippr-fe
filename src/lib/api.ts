@@ -222,6 +222,9 @@ export const api = {
             method: 'DELETE'
         }),
         standings: (token: string, id: string) => fetchApi<LeagueStandingDto[]>(`leagues/${id}/standings`, token),
+        recalculateStandings: (token: string, id: string) => fetchApi<LeagueStandingDto[]>(`leagues/${id}/standings/recalculate`, token, {
+            method: 'POST'
+        }),
         updateSettings: (token: string, id: string, settings: Partial<LeagueSettingsDto>) => fetchApi<LeagueSettingsDto>(`leagues/${id}/settings`, token, {
             method: 'PUT',
             body: JSON.stringify(settings)
@@ -238,6 +241,10 @@ export const api = {
     predictions: {
         submit: (token: string, data: SubmitPredictionRequest) => fetchApi<string>('predictions', token, {
             method: 'POST',
+            body: JSON.stringify(data)
+        }),
+        update: (token: string, id: string, data: { homeScore: number; awayScore: number }) => fetchApi<void>(`predictions/${id}`, token, {
+            method: 'PUT',
             body: JSON.stringify(data)
         }),
         list: (token: string, leagueId?: string) => {
