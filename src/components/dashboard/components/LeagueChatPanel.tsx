@@ -5,13 +5,13 @@ import { format } from "date-fns";
 import { sv } from "date-fns/locale";
 
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea"; // Changed to Textarea
+import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { UserAvatar } from "@/components/UserAvatar";
 import { toast } from "react-hot-toast";
 import { supabase } from "@/lib/supabase";
 import { chatService, type ChatMessage } from "@/services/chatService";
-import { useLeagueStandings } from "@/hooks/api"; // Added hook
+import { useLeagueStandings } from "@/hooks/api";
 
 interface LeagueChatPanelProps {
     leagueId: string;
@@ -169,13 +169,8 @@ export function LeagueChatPanel({ leagueId }: LeagueChatPanelProps) {
             requestAnimationFrame(() => {
                 if (scrollContainer) {
                     const newScrollHeight = scrollContainer.scrollHeight;
-                    // The change in height is what we added at the top. 
-                    // We want to scroll down by that amount to keep the viewport looking at the same messages.
                     const heightDifference = newScrollHeight - oldScrollHeight;
                     scrollContainer.scrollTop = heightDifference + oldScrollTop;
-                    // Alternatively: scrollContainer.scrollTop = newScrollHeight - oldScrollHeight; if we were at top 0.
-                    // But user might have scrolled a bit down. 
-                    // Usually: scrollTop = newScrollHeight - oldScrollHeight if we were at the very top (0).
                 }
             });
 
@@ -207,8 +202,6 @@ export function LeagueChatPanel({ leagueId }: LeagueChatPanelProps) {
     };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
-        // Shift + Enter should insert newline (default behavior of textarea), so we don't preventDefault.
-        // Enter without Shift should send.
         if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
             handleSend();
@@ -217,8 +210,8 @@ export function LeagueChatPanel({ leagueId }: LeagueChatPanelProps) {
 
     if (isInitializing) {
         return (
-            <div className="flex h-[400px] items-center justify-center border rounded-lg bg-card">
-                <div className="flex flex-col items-center gap-2 text-muted-foreground">
+            <div className="flex h-[400px] items-center justify-center border border-border-subtle rounded-xl bg-bg-surface">
+                <div className="flex flex-col items-center gap-2 text-text-tertiary">
                     <Loader2 className="h-8 w-8 animate-spin" />
                     <p>Ansluter till chat...</p>
                 </div>
@@ -228,8 +221,8 @@ export function LeagueChatPanel({ leagueId }: LeagueChatPanelProps) {
 
     if (error) {
         return (
-            <div className="flex h-[400px] items-center justify-center border rounded-lg bg-card p-6">
-                <div className="flex flex-col items-center gap-2 text-destructive text-center">
+            <div className="flex h-[400px] items-center justify-center border border-border-subtle rounded-xl bg-bg-surface p-6">
+                <div className="flex flex-col items-center gap-2 text-danger text-center">
                     <AlertCircle className="h-8 w-8" />
                     <p>{error}</p>
                     <Button variant="outline" onClick={() => window.location.reload()}>Försök igen</Button>
@@ -239,10 +232,10 @@ export function LeagueChatPanel({ leagueId }: LeagueChatPanelProps) {
     }
 
     return (
-        <div className="flex flex-col h-[600px] border rounded-lg bg-card overflow-hidden">
+        <div className="flex flex-col h-[600px] border border-border-subtle rounded-xl bg-bg-surface overflow-hidden shadow-sm">
             {/* Header */}
-            <div className="p-3 border-b bg-muted/20 flex items-center justify-between shadow-sm z-10">
-                <h3 className="font-semibold text-sm">Ligachatt</h3>
+            <div className="p-3 border-b border-border-subtle bg-bg-subtle/30 flex items-center justify-between z-10">
+                <h3 className="font-semibold text-sm text-text-primary">Ligachatt</h3>
                 <div className={`text-xs flex items-center gap-1.5 ${connection?.state === HubConnectionState.Connected ? 'text-emerald-600' : 'text-amber-600'}`}>
                     <span className={`h-2 w-2 rounded-full ${connection?.state === HubConnectionState.Connected ? 'bg-emerald-500' : 'bg-amber-500'}`} />
                     {connection?.state === HubConnectionState.Connected ? 'Live' : 'Ansluter...'}
@@ -253,7 +246,7 @@ export function LeagueChatPanel({ leagueId }: LeagueChatPanelProps) {
             <ScrollArea className="flex-1 p-4" ref={scrollRef}>
                 {nextCursor && (
                     <div className="flex justify-center mb-4">
-                        <Button variant="ghost" size="sm" onClick={loadMore} disabled={isLoading} className="text-xs">
+                        <Button variant="ghost" size="sm" onClick={loadMore} disabled={isLoading} className="text-xs text-text-tertiary">
                             {isLoading ? <Loader2 className="h-3 w-3 animate-spin mr-2" /> : null}
                             Ladda äldre
                         </Button>
@@ -262,7 +255,7 @@ export function LeagueChatPanel({ leagueId }: LeagueChatPanelProps) {
 
                 <div className="space-y-4">
                     {messages.length === 0 ? (
-                        <div className="text-center text-muted-foreground text-sm py-8">
+                        <div className="text-center text-text-tertiary text-sm py-8">
                             Inga meddelanden än. Bli den första som skriver något!
                         </div>
                     ) : (
@@ -277,27 +270,27 @@ export function LeagueChatPanel({ leagueId }: LeagueChatPanelProps) {
                                             username: msg.username,
                                             avatarUrl: msg.avatarUrl
                                         }}
-                                        className="h-8 w-8 mt-1 border ring-2 ring-background"
+                                        className="h-8 w-8 mt-1 border ring-2 ring-bg-surface"
                                     />
                                     <div className={`flex flex-col max-w-[85%] ${isMyMessage ? 'items-end' : 'items-start'}`}>
                                         <div className="flex items-center gap-2 mb-1">
                                             <div className="flex items-center gap-1.5">
-                                                <span className="text-xs font-semibold text-foreground/80">{msg.username}</span>
+                                                <span className="text-xs font-semibold text-text-primary">{msg.username}</span>
                                                 {rank && (
                                                     <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${rank === 1 ? 'bg-yellow-100 text-yellow-700 border border-yellow-200' :
                                                         rank === 2 ? 'bg-slate-100 text-slate-700 border border-slate-200' :
                                                             rank === 3 ? 'bg-orange-100 text-orange-800 border border-orange-200' :
-                                                                'bg-muted text-muted-foreground'
+                                                                'bg-bg-subtle text-text-secondary border border-border-subtle'
                                                         }`}>
                                                         #{rank}
                                                     </span>
                                                 )}
                                             </div>
-                                            <span className="text-[10px] text-muted-foreground">{format(new Date(msg.createdAt), 'HH:mm', { locale: sv })}</span>
+                                            <span className="text-[10px] text-text-tertiary">{format(new Date(msg.createdAt), 'HH:mm', { locale: sv })}</span>
                                         </div>
                                         <div className={`rounded-2xl px-3 py-2 text-sm shadow-sm whitespace-pre-wrap break-words ${isMyMessage
-                                            ? 'bg-primary text-primary-foreground rounded-tr-none'
-                                            : 'bg-muted rounded-tl-none border'
+                                            ? 'bg-brand-600 text-white rounded-tr-none'
+                                            : 'bg-bg-subtle text-text-primary rounded-tl-none border border-border-subtle'
                                             }`}>
                                             {msg.message}
                                         </div>
@@ -311,7 +304,7 @@ export function LeagueChatPanel({ leagueId }: LeagueChatPanelProps) {
             </ScrollArea>
 
             {/* Input */}
-            <div className="p-3 border-t bg-muted/10">
+            <div className="p-3 border-t border-border-subtle bg-bg-subtle/10">
                 <div className="flex gap-2 items-end">
                     <Textarea
                         value={inputText}
@@ -319,18 +312,18 @@ export function LeagueChatPanel({ leagueId }: LeagueChatPanelProps) {
                         onKeyDown={handleKeyDown}
                         placeholder="Skriv ett meddelande..."
                         disabled={connection?.state !== HubConnectionState.Connected}
-                        className="flex-1 min-h-[44px] max-h-[120px] resize-none py-3"
+                        className="flex-1 min-h-[44px] max-h-[120px] resize-none py-3 bg-bg-surface border-border-input focus-visible:ring-brand-500"
                     />
                     <Button
                         onClick={handleSend}
                         disabled={!inputText.trim() || connection?.state !== HubConnectionState.Connected || isSending}
                         size="icon"
-                        className="h-11 w-11 shrink-0"
+                        className="h-11 w-11 shrink-0 bg-brand-600 hover:bg-brand-700"
                     >
                         {isSending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
                     </Button>
                 </div>
-                <div className="text-[10px] text-muted-foreground mt-2 ml-1 hidden sm:block">
+                <div className="text-[10px] text-text-tertiary mt-2 ml-1 hidden sm:block">
                     Shift + Enter för ny rad
                 </div>
             </div>

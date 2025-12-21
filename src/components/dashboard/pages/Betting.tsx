@@ -5,12 +5,34 @@ import { GroupStageLayout } from "@/components/dashboard/components/GroupStageLa
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Loader2, Trophy, Users, ArrowRight, Globe, Lock, Clock } from "lucide-react"
+import { Trophy, Users, ArrowRight, Globe, Lock, Clock, Loader2 } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import type { LeagueDto, MatchDto } from "@/lib/api"
 import { toast } from "react-hot-toast"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogClose } from "@/components/ui/dialog"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { Skeleton } from "@/components/ui/skeleton"
+import { motion } from "framer-motion"
+
+function BettingSkeleton() {
+  return (
+    <div className="space-y-8">
+      <div className="space-y-2">
+        <Skeleton className="h-8 w-32" />
+        <Skeleton className="h-4 w-48" />
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {Array.from({ length: 2 }).map((_, i) => (
+          <div key={i} className="rounded-2xl border border-border-subtle p-6 space-y-4">
+            <Skeleton className="h-6 w-40" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-10 w-full rounded-xl" />
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
 
 export function Betting() {
   const navigate = useNavigate()
@@ -173,13 +195,7 @@ export function Betting() {
   const standings = calculateStandings(groupMatches)
 
 
-  if (isLoading) {
-    return (
-      <div className="flex h-[50vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    )
-  }
+  if (isLoading) return <BettingSkeleton />
 
   // --- BETTING VIEW ---
   if (view === 'betting' && selectedLeague) {
@@ -297,127 +313,152 @@ export function Betting() {
 
   // --- DASHBOARD VIEW ---
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Tippa</h1>
-        <p className="text-muted-foreground">Välj en liga att tippa i.</p>
-      </div>
+    <motion.div
+      className="space-y-8"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+    >
+      <motion.div
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: 0.1 }}
+      >
+        <h1 className="text-3xl font-bold tracking-tight text-text-primary">Tippa</h1>
+        <p className="text-text-secondary">Välj en liga att tippa i.</p>
+      </motion.div>
 
       {!hasLeagues ? (
         // EMPTY STATE
-        <Card className="border-dashed">
-          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-            <div className="bg-muted/20 p-4 rounded-full mb-4">
-              <Trophy className="h-8 w-8 text-muted-foreground" />
-            </div>
-            <h3 className="text-lg font-semibold mb-2">Du är inte med i några ligor än</h3>
-            <p className="text-muted-foreground max-w-sm mb-6">
-              För att kunna tippa måste du vara med i en liga. Gå med i en existerande eller skapa en ny!
-            </p>
-            <Button onClick={() => navigate('/leagues')}>
-              Gå till Ligor
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </CardContent>
-        </Card>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.2 }}
+        >
+          <Card className="border-dashed">
+            <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+              <div className="bg-bg-subtle p-4 rounded-full mb-4">
+                <Trophy className="h-8 w-8 text-text-tertiary" />
+              </div>
+              <h3 className="text-lg font-semibold mb-2 text-text-primary">Du är inte med i några ligor än</h3>
+              <p className="text-text-secondary max-w-sm mb-6">
+                För att kunna tippa måste du vara med i en liga.
+              </p>
+              <Button onClick={() => navigate('/leagues')}>
+                Gå till Ligor
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </CardContent>
+          </Card>
+        </motion.div>
       ) : (
         // LEAGUE OPTIONS
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* GLOBAL LEAGUE CARD */}
-          <Card className={`relative overflow-hidden transition-all hover:shadow-md border-muted/60 ${!globalLeague ? 'opacity-90' : ''}`}>
-            <div className="absolute top-0 right-0 p-3 opacity-10">
-              <Globe className="h-24 w-24" />
-            </div>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Globe className="h-5 w-5 text-blue-500" />
-                Globala Ligan
-              </CardTitle>
-              <CardDescription>
-                Tävla mot alla användare på plattformen.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {globalLeague ? (
-                <Button className="w-full" onClick={() => handleLeagueSelect(globalLeague)}>
-                  Tippa i Globala Ligan
-                </Button>
-              ) : (
-                <Button variant="secondary" className="w-full" onClick={() => navigate('/dashboard/leagues')}>
-                  Gå med i Globala Ligan
-                </Button>
-              )}
-            </CardContent>
-          </Card>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            whileHover={{ y: -4, transition: { duration: 0.2 } }}
+          >
+            <Card className={`relative overflow-hidden transition-all hover:shadow-lg border-border-subtle h-full ${!globalLeague ? 'opacity-90' : ''}`}>
+              <div className="absolute top-0 right-0 p-3 opacity-10">
+                <Globe className="h-24 w-24" />
+              </div>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-text-primary">
+                  <Globe className="h-5 w-5 text-blue-500" />
+                  Globala Ligan
+                </CardTitle>
+                <CardDescription>
+                  Tävla mot alla användare på plattformen.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {globalLeague ? (
+                  <Button className="w-full" onClick={() => handleLeagueSelect(globalLeague)}>
+                    Tippa i Globala Ligan
+                  </Button>
+                ) : (
+                  <Button variant="secondary" className="w-full" onClick={() => navigate('/dashboard/leagues')}>
+                    Gå med i Globala Ligan
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
 
           {/* PRIVATE LEAGUES CARD */}
-          <Card className="relative overflow-hidden transition-all hover:shadow-md border-muted/60">
-            <div className="absolute top-0 right-0 p-3 opacity-10">
-              <Users className="h-24 w-24" />
-            </div>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5 text-emerald-500" />
-                Mina Ligor
-              </CardTitle>
-              <CardDescription>
-                Tippa i dina privata kompisligor.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button variant="outline" className="w-full">
-                    Välj liga
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-md">
-                  <DialogHeader>
-                    <DialogTitle>Välj Liga</DialogTitle>
-                    <DialogDescription>
-                      Välj vilken av dina privata ligor du vill tippa i.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <ScrollArea className="h-[300px] mt-4 pr-4">
-                    <div className="space-y-2">
-                      {privateLeagues.length === 0 ? (
-                        <div className="text-center py-8 text-muted-foreground">
-                          Inga privata ligor hittades.
-                        </div>
-                      ) : (
-                        privateLeagues.map(l => (
-                          <DialogClose asChild key={l.id}>
-                            <button
-                              onClick={() => handleLeagueSelect(l)}
-                              className="w-full text-left p-3 hover:bg-muted rounded-lg transition-colors flex items-center justify-between border group"
-                            >
-                              <div className="flex items-center gap-3">
-                                <div className="bg-emerald-100 text-emerald-600 p-2 rounded-full group-hover:bg-emerald-200 transition-colors">
-                                  <Users className="w-4 h-4" />
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            whileHover={{ y: -4, transition: { duration: 0.2 } }}
+          >
+            <Card className="relative overflow-hidden transition-all hover:shadow-lg border-border-subtle h-full">
+              <div className="absolute top-0 right-0 p-3 opacity-10">
+                <Users className="h-24 w-24" />
+              </div>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-text-primary">
+                  <Users className="h-5 w-5 text-brand-500" />
+                  Mina Ligor
+                </CardTitle>
+                <CardDescription>
+                  Tippa i dina privata kompisligor.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" className="w-full">
+                      Välj liga
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>Välj Liga</DialogTitle>
+                      <DialogDescription>
+                        Välj vilken av dina privata ligor du vill tippa i.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <ScrollArea className="h-[300px] mt-4 pr-4">
+                      <div className="space-y-2">
+                        {privateLeagues.length === 0 ? (
+                          <div className="text-center py-8 text-text-tertiary">
+                            Inga privata ligor hittades.
+                          </div>
+                        ) : (
+                          privateLeagues.map(l => (
+                            <DialogClose asChild key={l.id}>
+                              <button
+                                onClick={() => handleLeagueSelect(l)}
+                                className="w-full text-left p-3 hover:bg-bg-subtle rounded-lg transition-colors flex items-center justify-between border border-border-subtle group"
+                              >
+                                <div className="flex items-center gap-3">
+                                  <div className="bg-brand-100 text-brand-600 p-2 rounded-full group-hover:bg-brand-200 transition-colors">
+                                    <Users className="w-4 h-4" />
+                                  </div>
+                                  <div className="flex flex-col">
+                                    <span className="font-medium truncate text-text-primary">{l.name}</span>
+                                    <span className="text-xs text-text-tertiary">{l.memberCount || 0} medlemmar</span>
+                                  </div>
                                 </div>
-                                <div className="flex flex-col">
-                                  <span className="font-medium truncate">{l.name}</span>
-                                  <span className="text-xs text-muted-foreground">{l.memberCount || 0} medlemmar</span>
-                                </div>
-                              </div>
-                              <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                            </button>
-                          </DialogClose>
-                        ))
-                      )}
-                    </div>
-                  </ScrollArea>
-                </DialogContent>
-              </Dialog>
-            </CardContent>
-          </Card>
+                                <ArrowRight className="w-4 h-4 text-text-tertiary group-hover:text-brand-500 transition-colors" />
+                              </button>
+                            </DialogClose>
+                          ))
+                        )}
+                      </div>
+                    </ScrollArea>
+                  </DialogContent>
+                </Dialog>
+              </CardContent>
+            </Card>
+          </motion.div>
         </div>
-
       )}
-
-
-
-    </div >
+    </motion.div>
   )
 }
 

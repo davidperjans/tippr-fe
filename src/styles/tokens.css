@@ -1,0 +1,125 @@
+@layer base {
+  :root {
+    /* --- Base Palette (Primitives) --- */
+    /* Neutrals - Slate inspired for sophistication */
+    --gray-0: 0 0% 100%;
+    --gray-50: 210 40% 98%;
+    --gray-100: 214 32% 96%;
+    --gray-200: 213 27% 90%;
+    --gray-300: 215 20% 83%;
+    --gray-400: 215 16% 62%;
+    --gray-500: 215 14% 46%;
+    --gray-600: 215 19% 35%;
+    --gray-700: 215 25% 27%;
+    --gray-800: 217 33% 17%;
+    --gray-900: 222 47% 11%;
+    --gray-950: 229 84% 5%;
+
+    /* Brand - Tippr Emerald/Teal (VIBRANT + PREMIUM) */
+    --brand-50: 166 76% 97%;
+    --brand-100: 167 85% 92%;
+    --brand-200: 168 84% 82%;
+    --brand-300: 170 79% 67%;
+    --brand-400: 172 66% 50%;
+    --brand-500: 173 80% 40%;
+    /* Primary - Rich Teal */
+    --brand-600: 175 84% 32%;
+    --brand-700: 176 86% 27%;
+    --brand-800: 176 84% 22%;
+    --brand-900: 177 88% 18%;
+
+    /* Accent - Electric Indigo (for highlights, CTAs) */
+    --accent-400: 245 90% 70%;
+    --accent-500: 245 92% 62%;
+    --accent-600: 245 85% 55%;
+
+    /* Semantic Intents - VIBRANT */
+    --success: 160 84% 39%;
+    --warning: 43 96% 56%;
+    --danger: 0 84% 60%;
+    --info: 217 91% 60%;
+
+    /* --- Semantic Tokens (Theming) --- */
+
+    /* Backgrounds */
+    --bg-app: var(--gray-50);
+    --bg-surface: var(--gray-0);
+    --bg-surface-hover: var(--gray-50);
+    --bg-surface-active: var(--gray-100);
+    --bg-subtle: var(--gray-100);
+    --bg-muted: var(--gray-200);
+
+    /* Text */
+    --text-primary: var(--gray-900);
+    --text-secondary: var(--gray-600);
+    --text-tertiary: var(--gray-400);
+    --text-brand: var(--brand-600);
+    --text-on-brand: var(--gray-0);
+    --text-inverse: var(--gray-0);
+
+    /* Borders */
+    --border-subtle: var(--gray-200);
+    --border-default: var(--gray-300);
+    --border-strong: var(--gray-400);
+    --border-interactive: var(--brand-500);
+
+    /* Components */
+    --ring-brand: var(--brand-500);
+    --input-bg: var(--gray-0);
+    --input-border: var(--gray-300);
+
+    /* Radius - More refined */
+    --radius-xs: 0.125rem;
+    --radius-sm: 0.25rem;
+    --radius-md: 0.5rem;
+    --radius-lg: 0.75rem;
+    --radius-xl: 1rem;
+    --radius-2xl: 1.5rem;
+    --radius-full: 9999px;
+
+    /* Shadows - Premium depth */
+    --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.03);
+    --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.06);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.04);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.04);
+    --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.2);
+    --shadow-glow: 0 0 20px rgb(23 195 178 / 0.15);
+    --shadow-glow-lg: 0 0 40px rgb(23 195 178 / 0.2);
+
+    /* Gradients */
+    --gradient-brand: linear-gradient(135deg, hsl(var(--brand-500)) 0%, hsl(var(--brand-600)) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(var(--accent-500)) 0%, hsl(var(--brand-500)) 100%);
+    --gradient-surface: linear-gradient(180deg, hsl(var(--gray-0)) 0%, hsl(var(--gray-50)) 100%);
+    --gradient-dark: linear-gradient(180deg, hsl(var(--gray-900)) 0%, hsl(var(--gray-950)) 100%);
+  }
+
+  .dark {
+    /* Dark Mode - RICH & PREMIUM */
+    --bg-app: var(--gray-950);
+    --bg-surface: var(--gray-900);
+    --bg-surface-hover: var(--gray-800);
+    --bg-surface-active: var(--gray-700);
+    --bg-subtle: var(--gray-800);
+    --bg-muted: var(--gray-700);
+
+    --text-primary: var(--gray-50);
+    --text-secondary: var(--gray-300);
+    --text-tertiary: var(--gray-500);
+    --text-brand: var(--brand-400);
+
+    --border-subtle: var(--gray-800);
+    --border-default: var(--gray-700);
+    --border-strong: var(--gray-600);
+
+    --input-bg: var(--gray-800);
+    --input-border: var(--gray-700);
+
+    /* Enhanced dark shadows */
+    --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.3), 0 1px 2px -1px rgb(0 0 0 / 0.3);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.3);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.5), 0 4px 6px -4px rgb(0 0 0 / 0.3);
+    --shadow-glow: 0 0 30px rgb(23 195 178 / 0.25);
+    --shadow-glow-lg: 0 0 60px rgb(23 195 178 / 0.35);
+  }
+}
