@@ -130,6 +130,7 @@ export default {
         "scale-in": "scaleIn 0.2s ease-out",
         shimmer: "shimmer 2s linear infinite",
         pulse: "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+        "float-slow": "floatSlow 20s ease-in-out infinite",
       },
       keyframes: {
         fadeIn: {
@@ -151,6 +152,12 @@ export default {
         shimmer: {
           "0%": { backgroundPosition: "-200% 0" },
           "100%": { backgroundPosition: "200% 0" },
+        },
+        // GPU-accelerated floating animation using only transform
+        floatSlow: {
+          "0%, 100%": { transform: "translate3d(0, 0, 0) scale(1)" },
+          "33%": { transform: "translate3d(30px, -20px, 0) scale(1.05)" },
+          "66%": { transform: "translate3d(-20px, 15px, 0) scale(0.98)" },
         },
       },
       transitionDuration: {
