@@ -19,12 +19,8 @@ import { PrivacyPage } from './pages/PrivacyPage'
 import { ContactPage } from './pages/ContactPage'
 import { AboutPage } from './pages/AboutPage'
 import { Information } from './components/dashboard/pages/Information'
-import { PreLaunchPage } from './pages/PreLaunchPage'
 import { Toaster } from 'react-hot-toast'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-
-// Check if pre-launch mode is enabled
-const PRE_LAUNCH_MODE = import.meta.env.VITE_PRE_LAUNCH === 'true'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -64,15 +60,6 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function AppLinks() {
-  // When pre-launch mode is enabled, only show the pre-launch page
-  if (PRE_LAUNCH_MODE) {
-    return (
-      <Routes>
-        <Route path="*" element={<PreLaunchPage />} />
-      </Routes>
-    )
-  }
-
   return (
     <Routes>
       <Route path="/" element={<HomeWrapper />} />
