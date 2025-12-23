@@ -10,12 +10,19 @@ import { Overview } from './components/dashboard/pages/Overview'
 import { Leagues } from './components/dashboard/pages/Leagues'
 import { LeagueDetailsPage } from './components/dashboard/pages/LeagueDetailsPage'
 import { TournamentDetailsPage } from './components/dashboard/pages/TournamentDetailsPage'
+import { MatchDetailsPage } from './components/dashboard/pages/MatchDetailsPage'
 import { ProfilePage } from './components/dashboard/pages/ProfilePage'
 import { Information } from './components/dashboard/pages/Information'
 import { TermsPage } from './pages/TermsPage'
 import { PrivacyPage } from './pages/PrivacyPage'
 import { ContactPage } from './pages/ContactPage'
 import { AboutPage } from './pages/AboutPage'
+import { AdminLayout } from './components/admin/AdminLayout'
+import { AdminDashboard } from './components/admin/AdminDashboard'
+import { AdminUsers } from './components/admin/AdminUsers'
+import { AdminLeagues } from './components/admin/AdminLeagues'
+import { AdminMatches } from './components/admin/AdminMatches'
+import { AdminTournaments } from './components/admin/AdminTournaments'
 import { Toaster } from 'react-hot-toast'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
@@ -24,6 +31,8 @@ const queryClient = new QueryClient({
     queries: {
       retry: 1,
       refetchOnWindowFocus: false,
+      staleTime: 5 * 60 * 1000,    // 5 minutes - data considered fresh
+      gcTime: 30 * 60 * 1000,      // 30 minutes - keep in cache
     },
   },
 })
@@ -56,6 +65,21 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
+function AdminRoute({ children }: { children: React.ReactNode }) {
+  const { user, loading, isAdmin } = useAuth()
+  if (loading) return (
+    <div className="flex h-screen items-center justify-center bg-background">
+      <div className="flex flex-col items-center gap-4">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-amber-500 border-t-transparent" />
+        <span className="text-sm text-text-secondary">Laddar...</span>
+      </div>
+    </div>
+  )
+  if (!user) return <Navigate to="/login" replace />
+  if (!isAdmin) return <Navigate to="/home" replace />
+  return <>{children}</>
+}
+
 function AppLinks() {
   return (
     <Routes>
@@ -75,6 +99,7 @@ function AppLinks() {
         <Route path="/leagues" element={<Leagues />} />
         <Route path="/leagues/:id/*" element={<LeagueDetailsPage />} />
         <Route path="/tournaments/:id" element={<TournamentDetailsPage />} />
+        <Route path="/match/:matchId" element={<MatchDetailsPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/information" element={<Information />} />
 
@@ -82,6 +107,21 @@ function AppLinks() {
         <Route path="/overview" element={<Navigate to="/home" replace />} />
         <Route path="/betting" element={<Navigate to="/leagues" replace />} />
         <Route path="/standings" element={<Navigate to="/leagues" replace />} />
+      </Route>
+
+      {/* Admin Routes */}
+      <Route element={
+        <AdminRoute>
+          <AppShell />
+        </AdminRoute>
+      }>
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<AdminDashboard />} />
+          <Route path="users" element={<AdminUsers />} />
+          <Route path="leagues" element={<AdminLeagues />} />
+          <Route path="matches" element={<AdminMatches />} />
+          <Route path="tournaments" element={<AdminTournaments />} />
+        </Route>
       </Route>
 
       <Route path="/terms" element={<TermsPage />} />

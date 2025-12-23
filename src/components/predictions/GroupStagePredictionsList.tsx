@@ -11,6 +11,7 @@ interface GroupStagePredictionsListProps {
     matches: MatchDto[]
     localValues: Record<string, { home: string; away: string }>
     savedValues: Record<string, { home: string; away: string }>
+    pointsEarned: Record<string, number | null>
     failedMatches: Set<string>
     isSaving: boolean
     leagueSettings?: LeagueSettingsDto
@@ -100,6 +101,7 @@ export function GroupStagePredictionsList({
     matches,
     localValues,
     savedValues,
+    pointsEarned,
     failedMatches,
     isSaving,
     leagueSettings,
@@ -160,6 +162,16 @@ export function GroupStagePredictionsList({
         return false
     }
 
+    // Pre-calculate live standings for ALL groups at the component level (hooks must not be inside loops)
+    const allGroupStandings = useMemo(() => {
+        const result: Record<string, ReturnType<typeof calculateLiveStandings>> = {}
+        sortedGroupNames.forEach(groupName => {
+            const groupMatches = groups[groupName]
+            result[groupName] = calculateLiveStandings(groupMatches, localValues)
+        })
+        return result
+    }, [sortedGroupNames, groups, localValues])
+
     if (sortedGroupNames.length === 0) {
         return (
             <div className="text-center py-12 text-text-tertiary">
@@ -182,11 +194,8 @@ export function GroupStagePredictionsList({
                     return vals && vals.home !== '' && vals.away !== ''
                 }).length
 
-                // Calculate live standings for this group
-                const liveStandings = useMemo(() =>
-                    calculateLiveStandings(groupMatches, localValues),
-                    [groupMatches, localValues]
-                )
+                // Get pre-calculated live standings for this group (from allGroupStandings)
+                const liveStandings = allGroupStandings[groupName] || []
 
                 return (
                     <motion.div
@@ -253,6 +262,7 @@ export function GroupStagePredictionsList({
                                                         awayScore={values.away}
                                                         savedHomeScore={saved?.home}
                                                         savedAwayScore={saved?.away}
+                                                        earnedPoints={pointsEarned[match.id] ?? undefined}
                                                         isFailed={failedMatches.has(match.id)}
                                                         isLocked={isMatchLocked(match)}
                                                         isSaving={isSaving}

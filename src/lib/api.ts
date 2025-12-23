@@ -8,6 +8,7 @@ export interface CurrentUserResponse {
     displayName: string | null;
     avatarUrl: string | null;
     lastLoginAt: string;
+    role: number; // 0 = regular user, 1 = admin
 }
 
 export interface LeagueDto {
@@ -74,6 +75,7 @@ export interface MatchDto {
     venue: string | null;
     groupName: string | null;
     updatedAt: string | null;
+    apiFootballId: string | null;
 }
 
 export interface TeamDto {
@@ -83,6 +85,9 @@ export interface TeamDto {
     flagUrl: string | null;
     groupName: string | null;
     fifaRank: number | null;
+    firstColor: string | null;
+    secondColor: string | null;
+    apiFootballId: string | null;
 }
 
 export const MatchStage = {
@@ -145,6 +150,157 @@ export interface LeagueStandingDto {
     avatarUrl: string | null;
 }
 
+// --- Bulk Prediction Types ---
+
+export interface BulkPredictionItem {
+    matchId: string;
+    homeScore: number;
+    awayScore: number;
+}
+
+export interface BulkPredictionsRequest {
+    leagueId: string;
+    predictions: BulkPredictionItem[];
+}
+
+export interface BulkPredictionResult {
+    matchId: string;
+    predictionId: string;
+    success: boolean;
+}
+
+export interface BulkPredictionsResponse {
+    successCount: number;
+    failedCount: number;
+    results: BulkPredictionResult[];
+}
+
+// --- Admin Types ---
+
+export type UserRole = 0 | 1; // 0 = User, 1 = Admin
+
+export interface PagedResult<T> {
+    items: T[];
+    totalCount: number;
+    page: number;
+    pageSize: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+}
+
+export interface AdminUserListDto {
+    id: string;
+    username: string | null;
+    displayName: string | null;
+    email: string | null;
+    avatarUrl: string | null;
+    role: UserRole;
+    isBanned: boolean;
+    lastLoginAt: string | null;
+    createdAt: string;
+}
+
+export interface AdminUserDto extends AdminUserListDto {
+    authUserId: string;
+    bio: string | null;
+    favoriteTeamId: string | null;
+    favoriteTeamName: string | null;
+    updatedAt: string;
+    leagueCount: number;
+    ownedLeagueCount: number;
+    predictionCount: number;
+}
+
+export interface AdminLeagueListDto {
+    id: string;
+    name: string | null;
+    description: string | null;
+    tournamentId: string;
+    tournamentName: string | null;
+    ownerId: string | null;
+    ownerUsername: string | null;
+    isPublic: boolean;
+    isGlobal: boolean;
+    maxMembers: number | null;
+    createdAt: string;
+    memberCount: number;
+}
+
+export interface AdminLeagueDto extends AdminLeagueListDto {
+    inviteCode: string | null;
+    isSystemCreated: boolean;
+    imageUrl: string | null;
+    updatedAt: string;
+    predictionCount: number;
+}
+
+export interface AdminLeagueMemberDto {
+    id: string;
+    leagueId: string;
+    userId: string;
+    username: string | null;
+    displayName: string | null;
+    email: string | null;
+    avatarUrl: string | null;
+    joinedAt: string;
+    isAdmin: boolean;
+    isMuted: boolean;
+    totalPoints: number;
+    rank: number;
+}
+
+export interface AdminMatchDto {
+    id: string;
+    tournamentId: string;
+    tournamentName: string | null;
+    homeTeamId: string;
+    homeTeamName: string | null;
+    homeTeamCode: string | null;
+    homeTeamFlagUrl: string | null;
+    awayTeamId: string;
+    awayTeamName: string | null;
+    awayTeamCode: string | null;
+    awayTeamFlagUrl: string | null;
+    matchDate: string;
+    stage: MatchStage;
+    homeScore: number | null;
+    awayScore: number | null;
+    status: MatchStatus;
+    venue: string | null;
+    apiFootballId: number | null;
+    resultVersion: number;
+    createdAt: string;
+    updatedAt: string;
+    predictionCount: number;
+}
+
+export interface AdminTournamentDto {
+    id: string;
+    name: string | null;
+    year: number;
+    type: number;
+    startDate: string;
+    endDate: string;
+    logoUrl: string | null;
+    isActive: boolean;
+    createdAt: string;
+    updatedAt: string;
+    teamCount: number;
+    matchCount: number;
+    leagueCount: number;
+    bonusQuestionCount: number;
+}
+
+export interface UpdateMatchResultRequest {
+    homeScore: number | null;
+    awayScore: number | null;
+    status: MatchStatus;
+}
+
+export interface UpdateUserRoleRequest {
+    role: UserRole;
+}
 
 // --- API Client ---
 
@@ -247,6 +403,10 @@ export const api = {
             method: 'PUT',
             body: JSON.stringify(data)
         }),
+        bulk: (token: string, data: BulkPredictionsRequest) => fetchApi<BulkPredictionsResponse>('predictions/bulk', token, {
+            method: 'POST',
+            body: JSON.stringify(data)
+        }),
         list: (token: string, leagueId?: string) => {
             const params = new URLSearchParams();
             if (leagueId) params.append('leagueId', leagueId);
@@ -256,6 +416,77 @@ export const api = {
     tournaments: {
         list: (token: string, onlyActive: boolean = false) => fetchApi<TournamentDto[]>(`tournaments?onlyActive=${onlyActive}`, token),
         getTeams: (token: string, tournamentId: string) => fetchApi<TeamDto[]>(`teams?tournamentId=${tournamentId}`, token)
+    },
+    // --- Admin API ---
+    admin: {
+        users: {
+            list: (token: string, params?: { search?: string; page?: number; pageSize?: number; sort?: string }) => {
+                const urlParams = new URLSearchParams();
+                if (params?.search) urlParams.append('search', params.search);
+                if (params?.page) urlParams.append('page', params.page.toString());
+                if (params?.pageSize) urlParams.append('pageSize', params.pageSize.toString());
+                if (params?.sort) urlParams.append('sort', params.sort);
+                return fetchApi<PagedResult<AdminUserListDto>>(`admin/users?${urlParams.toString()}`, token);
+            },
+            get: (token: string, userId: string) => fetchApi<AdminUserDto>(`admin/users/${userId}`, token),
+            update: (token: string, userId: string, data: { username?: string; displayName?: string; email?: string; bio?: string }) =>
+                fetchApi<AdminUserDto>(`admin/users/${userId}`, token, {
+                    method: 'PUT',
+                    body: JSON.stringify(data)
+                }),
+            updateRole: (token: string, userId: string, role: UserRole) =>
+                fetchApi<boolean>(`admin/users/${userId}/roles`, token, {
+                    method: 'POST',
+                    body: JSON.stringify({ role })
+                }),
+            ban: (token: string, userId: string) => fetchApi<boolean>(`admin/users/${userId}/ban`, token, { method: 'POST' }),
+            unban: (token: string, userId: string) => fetchApi<boolean>(`admin/users/${userId}/unban`, token, { method: 'POST' }),
+        },
+        leagues: {
+            list: (token: string, params?: { search?: string; tournamentId?: string; isPublic?: boolean; page?: number; pageSize?: number }) => {
+                const urlParams = new URLSearchParams();
+                if (params?.search) urlParams.append('search', params.search);
+                if (params?.tournamentId) urlParams.append('tournamentId', params.tournamentId);
+                if (params?.isPublic !== undefined) urlParams.append('isPublic', params.isPublic.toString());
+                if (params?.page) urlParams.append('page', params.page.toString());
+                if (params?.pageSize) urlParams.append('pageSize', params.pageSize.toString());
+                return fetchApi<PagedResult<AdminLeagueListDto>>(`admin/leagues?${urlParams.toString()}`, token);
+            },
+            get: (token: string, leagueId: string) => fetchApi<AdminLeagueDto>(`admin/leagues/${leagueId}`, token),
+            getMembers: (token: string, leagueId: string) => fetchApi<AdminLeagueMemberDto[]>(`admin/leagues/${leagueId}/members`, token),
+            update: (token: string, leagueId: string, data: Partial<{ name: string; description: string; isPublic: boolean; isGlobal: boolean; maxMembers: number }>) =>
+                fetchApi<AdminLeagueDto>(`admin/leagues/${leagueId}`, token, {
+                    method: 'PUT',
+                    body: JSON.stringify(data)
+                }),
+            delete: (token: string, leagueId: string) => fetchApi<boolean>(`admin/leagues/${leagueId}`, token, { method: 'DELETE' }),
+            removeMember: (token: string, leagueId: string, userId: string) =>
+                fetchApi<boolean>(`admin/leagues/${leagueId}/members/${userId}`, token, { method: 'DELETE' }),
+            recalculateStandings: (token: string, leagueId: string) =>
+                fetchApi<boolean>(`admin/leagues/${leagueId}/standings/recalculate`, token, { method: 'POST' }),
+        },
+        matches: {
+            updateResult: (token: string, matchId: string, data: UpdateMatchResultRequest) =>
+                fetchApi<boolean>(`admin/matches/${matchId}/result`, token, {
+                    method: 'PUT',
+                    body: JSON.stringify(data)
+                }),
+            recalculate: (token: string, matchId: string) =>
+                fetchApi<{ predictionsUpdated: number; leaguesAffected: number }>(`admin/matches/${matchId}/recalculate`, token, { method: 'POST' }),
+        },
+        tournaments: {
+            update: (token: string, tournamentId: string, data: Partial<{ name: string; startDate: string; endDate: string; logoUrl: string }>) =>
+                fetchApi<AdminTournamentDto>(`admin/tournaments/${tournamentId}`, token, {
+                    method: 'PUT',
+                    body: JSON.stringify(data)
+                }),
+            activate: (token: string, tournamentId: string) =>
+                fetchApi<boolean>(`admin/tournaments/${tournamentId}/activate`, token, { method: 'POST' }),
+            deactivate: (token: string, tournamentId: string) =>
+                fetchApi<boolean>(`admin/tournaments/${tournamentId}/deactivate`, token, { method: 'POST' }),
+            recalculateStandings: (token: string, tournamentId: string) =>
+                fetchApi<{ leaguesUpdated: number; totalMembersUpdated: number }>(`admin/tournaments/${tournamentId}/standings/recalculate`, token, { method: 'POST' }),
+        },
     }
 };
 
@@ -263,3 +494,4 @@ export const api = {
 export async function syncUser(accessToken: string) {
     return api.auth.me(accessToken);
 }
+

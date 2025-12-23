@@ -1,0 +1,73 @@
+/* API-Sports Widget Theme - Tippr Custom */
+
+/* Base theme matching Tippr design system */
+api-sports-widget[data-theme="tippr"] {
+  /* Brand colors */
+  --primary-color: #6366f1;
+  --success-color: #10b981;
+  --warning-color: #f59e0b;
+  --danger-color: #ef4444;
+  --light-color: #64748b;
+
+  /* Team colors */
+  --home-color: var(--primary-color);
+  --away-color: #f59e0b;
+
+  /* Text colors */
+  --text-color: #1e293b;
+  --text-color-info: #64748b;
+
+  /* Background */
+  --background-color: #ffffff;
+
+  /* Typography */
+  --primary-font-size: 0.75rem;
+  --secondary-font-size: 0.8rem;
+  --button-font-size: 0.8rem;
+  --title-font-size: 0.9rem;
+
+  /* Text transforms */
+  --header-text-transform: none;
+  --button-text-transform: none;
+  --title-text-transform: none;
+
+  /* Borders and sizing */
+  --border: 1px solid #e2e8f0;
+  --game-height: 2.5rem;
+  --league-height: 2.5rem;
+
+  /* Sizes */
+  --score-size: 2.25rem;
+  --flag-size: 20px;
+  --teams-logo-size: 20px;
+  --teams-logo-size-xl: 5rem;
+
+  /* Interactions */
+  --hover: rgba(99, 102, 241, 0.1);
+
+  /* Custom font */
+  font-family: 'Lexend', system-ui, sans-serif;
+}
+
+/* Dark theme variant */
+api-sports-widget[data-theme="tippr-dark"] {
+  --primary-color: #818cf8;
+  --success-color: #34d399;
+  --warning-color: #fbbf24;
+  --danger-color: #f87171;
+  --light-color: #94a3b8;
+
+  --home-color: var(--primary-color);
+  --away-color: #fbbf24;
+
+  --text-color: #f1f5f9;
+  --text-color-info: #94a3b8;
+
+  --background-color: #1e293b;
+
+  --border: 1px solid #334155;
+
+  --hover: rgba(129, 140, 248, 0.15);
+
+  font-family: 'Lexend', system-ui, sans-serif;
+}

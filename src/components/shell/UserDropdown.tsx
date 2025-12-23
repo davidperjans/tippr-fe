@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { UserAvatar } from '@/components/UserAvatar'
-import { LogOut, Settings, ChevronDown, User } from 'lucide-react'
+import { LogOut, Settings, ChevronDown, User, Shield } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils'
 export function UserDropdown() {
     const [isOpen, setIsOpen] = useState(false)
     const dropdownRef = useRef<HTMLDivElement>(null)
-    const { user, backendUser, signOut } = useAuth()
+    const { user, backendUser, signOut, isAdmin } = useAuth()
 
     const displayName = backendUser?.displayName || user?.user_metadata?.displayName || user?.email?.split('@')[0] || 'Användare'
 
@@ -97,6 +97,18 @@ export function UserDropdown() {
                                 <Settings className="w-4 h-4 text-text-tertiary group-hover:text-brand-500 transition-colors" />
                                 <span>Inställningar</span>
                             </Link>
+
+                            {/* Admin Link */}
+                            {isAdmin && (
+                                <Link
+                                    to="/admin"
+                                    onClick={() => setIsOpen(false)}
+                                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-text-primary hover:bg-amber-500/10 transition-colors group"
+                                >
+                                    <Shield className="w-4 h-4 text-amber-500 group-hover:text-amber-600 transition-colors" />
+                                    <span className="text-amber-600 dark:text-amber-400">Admin Panel</span>
+                                </Link>
+                            )}
                         </div>
 
                         {/* Logout */}

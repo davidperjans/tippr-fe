@@ -1,9 +1,10 @@
 import { useState } from "react"
 import { Link, useLocation } from "react-router-dom"
-import { Home, Users, Menu, X, Info } from "lucide-react"
+import { Home, Users, Menu, X, Info, Shield } from "lucide-react"
 import { UserDropdown } from "./UserDropdown"
 import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
+import { useAuth } from "@/contexts/AuthContext"
 
 const NAV_LINKS = [
     { to: "/home", label: "Hem", icon: Home },
@@ -14,10 +15,14 @@ const NAV_LINKS = [
 export function TopNavbar() {
     const location = useLocation()
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+    const { isAdmin } = useAuth()
 
     const isActive = (path: string) => {
         if (path === "/home") {
             return location.pathname === "/home" || location.pathname === "/overview"
+        }
+        if (path === "/admin") {
+            return location.pathname.startsWith("/admin")
         }
         return location.pathname.startsWith(path)
     }
@@ -52,6 +57,22 @@ export function TopNavbar() {
                             </Link>
                         )
                     })}
+
+                    {/* Admin Link - Only visible to admins */}
+                    {isAdmin && (
+                        <Link
+                            to="/admin"
+                            className={cn(
+                                "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all",
+                                isActive("/admin")
+                                    ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                                    : "text-text-secondary hover:text-text-primary hover:bg-bg-subtle"
+                            )}
+                        >
+                            <Shield className="w-4 h-4" />
+                            Admin
+                        </Link>
+                    )}
                 </nav>
 
                 {/* Right: User Menu + Mobile Toggle */}
@@ -99,6 +120,23 @@ export function TopNavbar() {
                                     </Link>
                                 )
                             })}
+
+                            {/* Admin Link - Only visible to admins */}
+                            {isAdmin && (
+                                <Link
+                                    to="/admin"
+                                    onClick={() => setMobileMenuOpen(false)}
+                                    className={cn(
+                                        "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all",
+                                        isActive("/admin")
+                                            ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                                            : "text-text-secondary hover:text-text-primary hover:bg-bg-subtle"
+                                    )}
+                                >
+                                    <Shield className="w-5 h-5" />
+                                    Admin
+                                </Link>
+                            )}
                         </nav>
                     </motion.div>
                 )}

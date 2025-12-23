@@ -6,6 +6,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Trophy, Users, ArrowRight, Globe, Lock, Clock, ArrowLeft } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import type { LeagueDto, MatchDto } from "@/lib/api"
+import { api } from "@/lib/api"
+import { useAuth } from "@/contexts/AuthContext"
 import { toast } from "react-hot-toast"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogClose } from "@/components/ui/dialog"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -39,6 +41,7 @@ function BettingSkeleton() {
 
 export function Betting({ preselectedLeagueId }: { preselectedLeagueId?: string } = {}) {
   const navigate = useNavigate()
+  const { token } = useAuth()
   const { data: leagues, isLoading } = useLeagues()
   const [selectedLeague, setSelectedLeague] = useState<LeagueDto | null>(null)
   const [view, setView] = useState<'dashboard' | 'betting'>(preselectedLeagueId ? 'betting' : 'dashboard')
@@ -165,86 +168,97 @@ export function Betting({ preselectedLeagueId }: { preselectedLeagueId?: string 
     })
   }, [groupMatches, localValues])
 
-  // Save changes
+  // Map matchId -> pointsEarned from predictions
+  const pointsEarned = useMemo(() => {
+    const result: Record<string, number | null> = {}
+    if (predictions) {
+      predictions.forEach(p => {
+        result[p.matchId] = p.pointsEarned
+      })
+    }
+    return result
+  }, [predictions])
+
+  // Save changes using bulk endpoint
   const handleSave = async () => {
     if (!selectedLeague || dirtyMatches.size === 0) return
     setIsSaving(true)
     setFailedMatches(new Set())
 
-    const promises = Array.from(dirtyMatches).map(async (matchId) => {
+    // Build bulk request with all dirty predictions
+    const bulkPredictions: { matchId: string; homeScore: number; awayScore: number }[] = []
+
+    Array.from(dirtyMatches).forEach(matchId => {
       const scores = localValues[matchId]
-      if (!scores || scores.home === '' || scores.away === '') {
-        return { matchId, success: true, predictionId: null }
-      }
-
-      const existingPrediction = savedPredictions[matchId]
-
-      try {
-        if (existingPrediction) {
-          // UPDATE existing prediction with PUT
-          await updatePrediction.mutateAsync({
-            id: existingPrediction.id,
-            homeScore: parseInt(scores.home),
-            awayScore: parseInt(scores.away),
-            leagueId: selectedLeague.id
-          })
-          return { matchId, success: true, predictionId: existingPrediction.id }
-        } else {
-          // CREATE new prediction with POST
-          const newId = await submitPrediction.mutateAsync({
-            leagueId: selectedLeague.id,
-            matchId,
-            homeScore: parseInt(scores.home),
-            awayScore: parseInt(scores.away)
-          })
-          return { matchId, success: true, predictionId: newId }
-        }
-      } catch (error) {
-        return { matchId, success: false, predictionId: existingPrediction?.id || null }
-      }
-    })
-
-    const results = await Promise.allSettled(promises)
-
-    const failed = new Set<string>()
-    const succeeded = new Set<string>()
-
-    results.forEach((result) => {
-      if (result.status === 'fulfilled') {
-        if (result.value.success) {
-          succeeded.add(result.value.matchId)
-        } else {
-          failed.add(result.value.matchId)
-        }
-      }
-    })
-
-    // Update saved predictions for successful saves
-    if (succeeded.size > 0) {
-      setSavedPredictions(prev => {
-        const newSaved = { ...prev }
-        results.forEach((result) => {
-          if (result.status === 'fulfilled' && result.value.success) {
-            const { matchId, predictionId } = result.value
-            newSaved[matchId] = {
-              id: predictionId || prev[matchId]?.id || '',
-              ...localValues[matchId]
-            }
-          }
+      if (scores && scores.home !== '' && scores.away !== '') {
+        bulkPredictions.push({
+          matchId,
+          homeScore: parseInt(scores.home),
+          awayScore: parseInt(scores.away)
         })
-        return newSaved
-      })
+      }
+    })
+
+    if (bulkPredictions.length === 0) {
+      setIsSaving(false)
+      return
     }
 
-    setFailedMatches(failed)
-    setIsSaving(false)
+    try {
+      // Use bulk endpoint
+      const response = await api.predictions.bulk(token!, {
+        leagueId: selectedLeague.id,
+        predictions: bulkPredictions
+      })
 
-    if (failed.size === 0) {
-      toast.success("Tippningar sparade")
-      refetchPredictions()
-    } else if (failed.size < dirtyMatches.size) {
-      toast.error("Vissa matcher kunde inte sparas")
-    } else {
+      const failed = new Set<string>()
+      const succeeded = new Set<string>()
+
+      // Process results
+      response.results.forEach((result) => {
+        if (result.success) {
+          succeeded.add(result.matchId)
+        } else {
+          failed.add(result.matchId)
+        }
+      })
+
+      // Update saved predictions for successful saves
+      if (succeeded.size > 0) {
+        setSavedPredictions(prev => {
+          const newSaved = { ...prev }
+          response.results.forEach((result) => {
+            if (result.success) {
+              const scores = localValues[result.matchId]
+              if (scores) {
+                newSaved[result.matchId] = {
+                  id: result.predictionId,
+                  home: scores.home,
+                  away: scores.away
+                }
+              }
+            }
+          })
+          return newSaved
+        })
+      }
+
+      setFailedMatches(failed)
+      setIsSaving(false)
+
+      if (failed.size === 0) {
+        toast.success(`${response.successCount} tippningar sparade`)
+        refetchPredictions()
+      } else if (failed.size < bulkPredictions.length) {
+        toast.error(`${response.failedCount} av ${bulkPredictions.length} kunde inte sparas`)
+      } else {
+        toast.error("Kunde inte spara tippningarna")
+      }
+    } catch (error) {
+      console.error('Bulk save failed:', error)
+      // Mark all as failed
+      setFailedMatches(new Set(bulkPredictions.map(p => p.matchId)))
+      setIsSaving(false)
       toast.error("Kunde inte spara tippningarna")
     }
   }
@@ -438,6 +452,7 @@ export function Betting({ preselectedLeagueId }: { preselectedLeagueId?: string 
               matches={groupMatches}
               localValues={localValues}
               savedValues={savedValues}
+              pointsEarned={pointsEarned}
               failedMatches={failedMatches}
               isSaving={isSaving}
               leagueSettings={selectedLeague.settings}

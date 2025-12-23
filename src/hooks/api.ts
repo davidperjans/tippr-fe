@@ -3,6 +3,14 @@ import { api } from '@/lib/api'
 import type { CreateLeagueRequest, SubmitPredictionRequest, LeagueSettingsDto } from '@/lib/api'
 import { supabase } from '@/lib/supabase'
 
+// Cache duration constants (in milliseconds)
+const STALE_TIME = {
+    STATIC: 30 * 60 * 1000,    // 30 min - tournaments, teams (rarely change)
+    SEMI_STATIC: 10 * 60 * 1000, // 10 min - user profile
+    MODERATE: 5 * 60 * 1000,   // 5 min - leagues
+    DYNAMIC: 2 * 60 * 1000,    // 2 min - matches, predictions, standings
+}
+
 // Helper to get token
 export async function getToken() {
     const { data: { session } } = await supabase.auth.getSession()
@@ -17,7 +25,8 @@ export function useTournaments(onlyActive = false) {
         queryFn: async () => {
             const token = await getToken()
             return api.tournaments.list(token, onlyActive)
-        }
+        },
+        staleTime: STALE_TIME.STATIC, // 30 min - tournaments rarely change
     })
 }
 
@@ -28,7 +37,8 @@ export function useTournamentTeams(tournamentId: string) {
             const token = await getToken()
             return api.tournaments.getTeams(token, tournamentId)
         },
-        enabled: !!tournamentId
+        enabled: !!tournamentId,
+        staleTime: STALE_TIME.STATIC, // 30 min - teams are static
     })
 }
 
@@ -39,7 +49,8 @@ export function useLeagues() {
         queryFn: async () => {
             const token = await getToken()
             return api.leagues.list(token)
-        }
+        },
+        staleTime: STALE_TIME.MODERATE, // 5 min - user may join/leave
     })
 }
 
@@ -50,7 +61,8 @@ export function useLeague(id: string) {
             const token = await getToken()
             return api.leagues.get(token, id)
         },
-        enabled: !!id
+        enabled: !!id,
+        staleTime: STALE_TIME.MODERATE, // 5 min
     })
 }
 
@@ -113,7 +125,8 @@ export function useLeagueStandings(leagueId: string) {
             const token = await getToken()
             return api.leagues.standings(token, leagueId)
         },
-        enabled: !!leagueId
+        enabled: !!leagueId,
+        staleTime: STALE_TIME.DYNAMIC, // 2 min - updates after results
     })
 }
 
@@ -125,8 +138,8 @@ export function useMatches(tournamentId?: string, date?: string) {
             const token = await getToken()
             return api.matches.list(token, tournamentId, date)
         },
-        // Only run if we have at least one filter, OR if we want to allow fetching all
-        enabled: !!tournamentId || !!date
+        enabled: !!tournamentId || !!date,
+        staleTime: STALE_TIME.DYNAMIC, // 2 min - live scores update
     })
 }
 
@@ -153,7 +166,8 @@ export function usePredictions(leagueId?: string) {
         queryFn: async () => {
             const token = await getToken()
             return api.predictions.list(token, leagueId)
-        }
+        },
+        staleTime: STALE_TIME.DYNAMIC, // 2 min - user may edit
     })
 }
 
@@ -190,6 +204,8 @@ export function useCurrentUser() {
         queryFn: async () => {
             const token = await getToken()
             return api.auth.me(token)
-        }
+        },
+        staleTime: STALE_TIME.SEMI_STATIC, // 10 min - profile rarely changes
     })
 }
+

@@ -11,6 +11,7 @@ interface AuthContextType {
   session: Session | null
   token: string | null
   loading: boolean
+  isAdmin: boolean
   signUp: (email: string, password: string, displayName?: string) => Promise<void>
   signIn: (email: string, password: string) => Promise<void>
   signInWithGoogle: () => Promise<void>
@@ -122,6 +123,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         session,
         token: session?.access_token || null,
         loading,
+        isAdmin: backendUser?.role === 1,
         signUp,
         signIn,
         signInWithGoogle,
