@@ -11,6 +11,7 @@ import { Leagues } from './components/dashboard/pages/Leagues'
 import { LeagueDetailsPage } from './components/dashboard/pages/LeagueDetailsPage'
 import { TournamentDetailsPage } from './components/dashboard/pages/TournamentDetailsPage'
 import { MatchDetailsPage } from './components/dashboard/pages/MatchDetailsPage'
+import { TeamDetailsPage } from './components/dashboard/pages/TeamDetailsPage'
 import { ProfilePage } from './components/dashboard/pages/ProfilePage'
 import { Information } from './components/dashboard/pages/Information'
 import { TermsPage } from './pages/TermsPage'
@@ -100,6 +101,7 @@ function AppLinks() {
         <Route path="/leagues/:id/*" element={<LeagueDetailsPage />} />
         <Route path="/tournaments/:id" element={<TournamentDetailsPage />} />
         <Route path="/match/:matchId" element={<MatchDetailsPage />} />
+        <Route path="/teams/:id" element={<TeamDetailsPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/information" element={<Information />} />
 

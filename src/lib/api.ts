@@ -88,6 +88,57 @@ export interface TeamDto {
     firstColor: string | null;
     secondColor: string | null;
     apiFootballId: string | null;
+    displayName: string | null; // Localized name
+    logoUrl?: string | null;
+}
+
+export interface PlayerDto {
+    id: string;
+    teamId: string;
+    name: string;
+    firstName?: string;
+    lastName?: string;
+    number?: number;
+    position?: string;
+    photoUrl?: string;
+    dateOfBirth?: string;
+    age?: number;
+    nationality?: string;
+    height?: number;
+    weight?: number;
+    injured?: boolean;
+    apiFootballId?: number;
+}
+
+export interface PlayerWithTeamDto extends PlayerDto {
+    teamName: string;
+    teamDisplayName?: string;
+    teamLogoUrl?: string;
+}
+
+export interface VenueDto {
+    id: string;
+    name: string;
+    city?: string;
+    capacity?: number;
+    surface?: string;
+    imageUrl?: string;
+}
+
+export interface GroupStandingDto {
+    groupId: string;
+    teamId: string;
+    team: TeamDto;
+    position: number;
+    played: number;
+    won: number;
+    drawn: number;
+    lost: number;
+    goalsFor: number;
+    goalsAgainst: number;
+    goalDifference: number;
+    points: number;
+    form?: string;
 }
 
 export const MatchStage = {
@@ -387,12 +438,15 @@ export const api = {
         })
     },
     matches: {
-        list: (token: string, tournamentId?: string, date?: string) => {
+        list: (token: string, tournamentId?: string, date?: string, teamId?: string) => {
             const params = new URLSearchParams();
             if (tournamentId) params.append('tournamentId', tournamentId);
             if (date) params.append('date', date);
+            if (teamId) params.append('teamId', teamId);
             return fetchApi<MatchDto[]>(`matches?${params.toString()}`, token);
-        }
+        },
+        get: (token: string, id: string) => fetchApi<MatchDto>(`matches/${id}`, token),
+        getByTeam: (token: string, teamId: string) => fetchApi<MatchDto[]>(`matches/by-team/${teamId}`, token)
     },
     predictions: {
         submit: (token: string, data: SubmitPredictionRequest) => fetchApi<string>('predictions', token, {
@@ -415,8 +469,37 @@ export const api = {
     },
     tournaments: {
         list: (token: string, onlyActive: boolean = false) => fetchApi<TournamentDto[]>(`tournaments?onlyActive=${onlyActive}`, token),
-        getTeams: (token: string, tournamentId: string) => fetchApi<TeamDto[]>(`teams?tournamentId=${tournamentId}`, token)
+        getTeams: (token: string, tournamentId: string) => fetchApi<TeamDto[]>(`teams?tournamentId=${tournamentId}`, token),
+        getStandings: (token: string, tournamentId: string) => fetchApi<GroupStandingDto[]>(`tournaments/${tournamentId}/standings`, token) // Approximated endpoint
     },
+    teams: {
+        get: (token: string, id: string) => fetchApi<TeamDto>(`teams/${id}`, token),
+    },
+    players: {
+        list: (token: string, tournamentId: string, position?: string, search?: string) => {
+            const params = new URLSearchParams();
+            params.append('tournamentId', tournamentId);
+            if (position) params.append('position', position);
+            if (search) params.append('search', search);
+            return fetchApi<PlayerWithTeamDto[]>(`players?${params.toString()}`, token);
+        },
+        get: (token: string, id: string) => fetchApi<PlayerWithTeamDto>(`players/${id}`, token),
+        getByTeam: (token: string, teamId: string) => fetchApi<PlayerDto[]>(`players/by-team/${teamId}`, token)
+    },
+    venues: {
+        list: (token: string, tournamentId?: string) => {
+            const params = new URLSearchParams();
+            if (tournamentId) params.append('tournamentId', tournamentId);
+            return fetchApi<VenueDto[]>(`venues?${params.toString()}`, token);
+        },
+        get: (token: string, id: string) => fetchApi<VenueDto>(`venues/${id}`, token),
+        getByTeam: (token: string, teamId: string) => fetchApi<VenueDto>(`venues/by-team/${teamId}`, token),
+        getByMatch: (token: string, matchId: string) => fetchApi<VenueDto>(`venues/by-match/${matchId}`, token)
+    },
+    groups: {
+        getStandings: (token: string, groupId: string) => fetchApi<GroupStandingDto[]>(`groups/${groupId}/standings`, token)
+    },
+
     // --- Admin API ---
     admin: {
         users: {

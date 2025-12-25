@@ -131,15 +131,76 @@ export function useLeagueStandings(leagueId: string) {
 }
 
 // --- Matches ---
-export function useMatches(tournamentId?: string, date?: string) {
+export function useMatches(tournamentId?: string, date?: string, teamId?: string) {
     return useQuery({
-        queryKey: ['matches', { tournamentId, date }],
+        queryKey: ['matches', { tournamentId, date, teamId }],
         queryFn: async () => {
             const token = await getToken()
-            return api.matches.list(token, tournamentId, date)
+            return api.matches.list(token, tournamentId, date, teamId)
         },
-        enabled: !!tournamentId || !!date,
+        enabled: !!tournamentId || !!date || !!teamId,
         staleTime: STALE_TIME.DYNAMIC, // 2 min - live scores update
+    })
+}
+
+export function useMatch(id: string) {
+    return useQuery({
+        queryKey: ['matches', id],
+        queryFn: async () => {
+            const token = await getToken()
+            return api.matches.get(token, id)
+        },
+        enabled: !!id,
+        staleTime: STALE_TIME.DYNAMIC
+    })
+}
+
+// --- Teams ---
+export function useTeam(id: string) {
+    return useQuery({
+        queryKey: ['teams', id],
+        queryFn: async () => {
+            const token = await getToken()
+            return api.teams.get(token, id)
+        },
+        enabled: !!id,
+        staleTime: STALE_TIME.STATIC
+    })
+}
+
+export function useTeamPlayers(id: string) {
+    return useQuery({
+        queryKey: ['teams', id, 'players'],
+        queryFn: async () => {
+            const token = await getToken()
+            return api.players.getByTeam(token, id)
+        },
+        enabled: !!id,
+        staleTime: STALE_TIME.STATIC
+    })
+}
+
+export function useVenueByMatch(matchId: string) {
+    return useQuery({
+        queryKey: ['venues', 'match', matchId],
+        queryFn: async () => {
+            const token = await getToken()
+            return api.venues.getByMatch(token, matchId)
+        },
+        enabled: !!matchId,
+        staleTime: STALE_TIME.STATIC
+    })
+}
+
+export function useTeamMatches(id: string) {
+    return useQuery({
+        queryKey: ['matches', { teamId: id }],
+        queryFn: async () => {
+            const token = await getToken()
+            return api.matches.getByTeam(token, id)
+        },
+        enabled: !!id,
+        staleTime: STALE_TIME.DYNAMIC
     })
 }
 
