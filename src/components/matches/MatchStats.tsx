@@ -1,5 +1,4 @@
-import React from 'react';
-import { MatchDto } from '../../lib/api';
+import type { MatchDto } from '../../lib/api';
 import { cn } from '../../lib/utils';
 import { FormIndicator } from '../common/FormIndicator';
 

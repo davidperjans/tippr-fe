@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { PlayerDto } from '../../lib/api';
+import { useState } from 'react';
+import type { PlayerDto } from '../../lib/api';
 import { cn } from '../../lib/utils';
 import { Users, Shield, Footprints, Target, Hand } from 'lucide-react'; // Swapped custom icon names for best Lucide approximations
 

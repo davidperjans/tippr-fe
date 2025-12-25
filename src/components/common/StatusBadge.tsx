@@ -1,4 +1,3 @@
-import React from 'react';
 import { MatchStatus, MatchStage } from '../../lib/api';
 import { cn } from '../../lib/utils';
 

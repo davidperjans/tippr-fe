@@ -1,6 +1,5 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
-import { TeamDto } from '../../lib/api';
+import type { TeamDto } from '../../lib/api';
 import { cn } from '../../lib/utils';
 
 interface TeamBadgeProps {

@@ -1,9 +1,8 @@
-import React from 'react';
-import { MatchDto, MatchStatus } from '../../lib/api';
+import type { MatchDto } from '../../lib/api';
+import { MatchStatus } from '../../lib/api';
 import { cn } from '../../lib/utils';
 import { format } from 'date-fns';
 import { sv } from 'date-fns/locale';
-import { StatusBadge } from '../common/StatusBadge';
 import { MapPin, Calendar, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 

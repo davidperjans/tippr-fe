@@ -1,5 +1,5 @@
-import React from 'react';
-import { MatchDto } from '../../lib/api';
+import type { MatchDto } from '../../lib/api';
+import { MatchStatus } from '../../lib/api';
 import { TeamBadge } from '../team/TeamBadge';
 import { StatusBadge } from '../common/StatusBadge';
 import { cn } from '../../lib/utils';
@@ -53,7 +53,7 @@ export function ScoreWidget({ match, className }: ScoreWidgetProps) {
 
                     {/* Score / VS */}
                     <div className="flex flex-col items-center px-4">
-                        {match.status === 'Scheduled' ? (
+                        {match.status === MatchStatus.Scheduled ? (
                             <div className="text-3xl font-bold text-text-tertiary">VS</div>
                         ) : (
                             <div className="flex items-center gap-4 text-4xl font-bold text-text-primary tabular-nums">

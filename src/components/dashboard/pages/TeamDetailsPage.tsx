@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useParams, useNavigate } from "react-router-dom"
 import { useTeam, useTeamPlayers, useTeamMatches } from "@/hooks/api"
 import { Button } from "@/components/ui/button"
@@ -8,7 +8,6 @@ import { SquadWidget } from "@/components/team/SquadWidget"
 import { FixturesWidget } from "@/components/team/FixturesWidget"
 import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs-simple"
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { getToken } from '@/hooks/api'

@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { parseISO, differenceInSeconds, format } from 'date-fns';
-import { sv } from 'date-fns/locale';
 import { cn } from '../../lib/utils';
 
 interface CountdownTimerProps {

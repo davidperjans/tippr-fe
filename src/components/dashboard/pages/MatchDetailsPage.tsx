@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom"
-import { useMatches, usePredictions, useLeagues, useTournamentTeams, useVenueByMatch, useTeam } from "@/hooks/api"
+import { useMatches, usePredictions, useLeagues, useVenueByMatch } from "@/hooks/api"
 import { MatchStatus } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, MapPin } from "lucide-react"
@@ -19,7 +19,6 @@ export function MatchDetailsPage() {
     const activeTournamentId = leagues?.[0]?.tournamentId
     const { data: matches, isLoading: matchesLoading } = useMatches(activeTournamentId)
     const { data: predictions } = usePredictions(leagues?.[0]?.id)
-    const { data: teams } = useTournamentTeams(activeTournamentId || '')
     const { data: venue } = useVenueByMatch(matchId || '')
 
     const match = matches?.find(m => m.id === matchId)
@@ -31,13 +30,7 @@ export function MatchDetailsPage() {
 
     // API-Sports integration (keep as supplementary)
     const apiSportsKey = useApiSportsKey()
-    const homeTeam = teams?.find(t => t.id === match?.homeTeamId)
-    const awayTeam = teams?.find(t => t.id === match?.awayTeamId)
     const apiSportsFixtureId = match?.apiFootballId ? parseInt(match.apiFootballId) : undefined
-    const homeTeamApiId = homeTeam?.apiFootballId ? parseInt(homeTeam.apiFootballId) : undefined
-    const awayTeamApiId = awayTeam?.apiFootballId ? parseInt(awayTeam.apiFootballId) : undefined
-    const apiSportsTeamIds: [number, number] | undefined =
-        (homeTeamApiId && awayTeamApiId) ? [homeTeamApiId, awayTeamApiId] : undefined
 
 
     if (matchesLoading) {
