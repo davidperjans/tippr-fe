@@ -270,3 +270,16 @@ export function useCurrentUser() {
     })
 }
 
+export function useUpdateProfile() {
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationFn: async (data: import('@/lib/api').UpdateProfileRequest) => {
+            const token = await getToken()
+            return api.users.updateProfile(token, data)
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['currentUser'] })
+        }
+    })
+}
+

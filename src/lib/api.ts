@@ -2,13 +2,42 @@ const API_URL = import.meta.env.VITE_API_URL || 'https://localhost:7126'
 
 // --- Types based on Swagger ---
 
+// {
+//     "displayName": "string (optional, max 100 chars)",
+//     "bio": "string (optional, max 500 chars)",
+//     "favoriteTeamId": "guid (optional)"
+// }
+// Response: Returns UserProfileDto with id, username, displayName, avatarUrl, bio, favoriteTeamId, favoriteTeamName, createdAt, updatedAt
+
+export interface UserProfileDto {
+    id: string;
+    username: string | null;
+    displayName: string | null;
+    avatarUrl: string | null;
+    bio: string | null;
+    favoriteTeamId: string | null;
+    favoriteTeamName: string | null;
+    createdAt: string;
+    updatedAt: string | null;
+}
+
 export interface CurrentUserResponse {
     userId: string;
     email: string | null;
+    username: string | null;
     displayName: string | null;
     avatarUrl: string | null;
     lastLoginAt: string;
     role: number; // 0 = regular user, 1 = admin
+    bio: string | null;
+    favoriteTeamId: string | null;
+    favoriteTeamName?: string | null;
+}
+
+export interface UpdateProfileRequest {
+    displayName?: string;
+    bio?: string;
+    favoriteTeamId?: string;
 }
 
 export interface LeagueDto {
@@ -409,7 +438,11 @@ export const api = {
                 method: 'POST',
                 body: formData
             });
-        }
+        },
+        updateProfile: (token: string, data: UpdateProfileRequest) => fetchApi<UserProfileDto>('users/profile', token, {
+            method: 'PATCH',
+            body: JSON.stringify(data)
+        })
     },
     leagues: {
         list: (token: string) => fetchApi<LeagueDto[]>('leagues', token),

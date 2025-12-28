@@ -1,8 +1,8 @@
 import { useState, useRef } from 'react'
 import { useAuth } from '../../../contexts/AuthContext'
-import { useLeagues } from '../../../hooks/api'
+import { useLeagues, useTournaments, useTournamentTeams, useUpdateProfile } from '../../../hooks/api'
 import { api, syncUser } from '@/lib/api'
-import { Trophy, Settings, Camera, Mail, Activity, Shield } from 'lucide-react'
+import { Trophy, Settings, Camera, Activity, Shield } from 'lucide-react'
 import { UserAvatar } from '@/components/UserAvatar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -14,14 +14,49 @@ import { Badge } from '@/components/ui/badge'
 export function ProfilePage() {
     const { user, backendUser, token, setBackendUser } = useAuth()
     const { data: leagues } = useLeagues()
+    const { data: tournaments } = useTournaments()
+
+    // Find VM tournament (or default to first active)
+    const vmTournament = tournaments?.find(t => t.name?.toLowerCase().includes('vm')) || tournaments?.find(t => t.isActive)
+    const { data: teams } = useTournamentTeams(vmTournament?.id || '')
+
+    const updateProfile = useUpdateProfile()
+
     const [activeTab, setActiveTab] = useState<'overview' | 'leagues' | 'settings'>('overview')
     const [isUploading, setIsUploading] = useState(false)
+    const [isSaving, setIsSaving] = useState(false)
     const fileInputRef = useRef<HTMLInputElement>(null)
 
     const displayName = backendUser?.displayName || user?.user_metadata?.displayName || 'Användare'
     const email = user?.email
     const joinDate = user?.created_at ? new Date(user.created_at).toLocaleDateString('sv-SE', { year: 'numeric', month: 'long' }) : 'N/A'
     const avatarUrl = backendUser?.avatarUrl
+    const bio = backendUser?.bio || ''
+    const favoriteTeamId = backendUser?.favoriteTeamId || ''
+
+    // Local state for form
+    const [formName, setFormName] = useState(displayName)
+    const [formBio, setFormBio] = useState(bio)
+    const [formTeamId, setFormTeamId] = useState(favoriteTeamId)
+
+    // Update local state when backend user loads
+    if (backendUser && formName === 'Användare' && displayName !== 'Användare') {
+        setFormName(displayName)
+    }
+    // We can't easily sync bio/teamId solely on "if changed" due to re-renders, 
+    // but initializing state above with `backendUser?.bio || ''` works for initial load.
+    // If backendUser updates *after* initial render (and not just refetch), we might want useEffect, 
+    // but typically profile pages don't auto-update form fields while editing.
+    // Let's rely on initial values or add a useEffect if needed.
+
+    // Only Sync once when data is first available
+    const [initialized, setInitialized] = useState(false)
+    if (backendUser && !initialized) {
+        setFormName(backendUser.displayName || '')
+        setFormBio(backendUser.bio || '')
+        setFormTeamId(backendUser.favoriteTeamId || '')
+        setInitialized(true)
+    }
 
     // Stats
     const leaguesCount = leagues?.length || 0
@@ -56,6 +91,24 @@ export function ProfilePage() {
         }
     }
 
+    const handleSaveProfile = async () => {
+        if (!token) return
+        setIsSaving(true)
+        try {
+            await updateProfile.mutateAsync({
+                displayName: formName,
+                bio: formBio,
+                favoriteTeamId: formTeamId
+            })
+            // Success feedback?
+        } catch (error) {
+            console.error('Failed to update profile:', error)
+            alert('Misslyckades med att spara profilen.')
+        } finally {
+            setIsSaving(false)
+        }
+    }
+
     return (
         <div className="space-y-8 pb-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {/* Hidden File Input */}
@@ -68,16 +121,24 @@ export function ProfilePage() {
             />
 
             {/* Header Area */}
-            <div className="relative mb-16">
+            <div className="relative">
                 {/* Cover */}
-                <div className="h-48 md:h-60 w-full rounded-2xl bg-gradient-to-br from-brand-600 to-indigo-700 shadow-inner relative overflow-hidden">
+                <div className="h-48 md:h-64 w-full rounded-2xl bg-gradient-to-br from-brand-600 to-indigo-700 shadow-inner relative overflow-hidden">
                     <div className="absolute inset-0 bg-black/10" />
                     <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-20" />
+
+                    {/* Actions - Now inside cover */}
+                    <div className="absolute bottom-4 right-6 hidden md:block">
+                        <Button variant="secondary" onClick={() => setActiveTab('settings')} className="shadow-sm">
+                            <Settings className="w-4 h-4 mr-2" />
+                            Redigera Profil
+                        </Button>
+                    </div>
                 </div>
 
-                {/* Avatar & Ident */}
-                <div className="absolute -bottom-12 left-6 md:left-10 flex items-end gap-6">
-                    <div className="relative group">
+                {/* Avatar & Ident - Using negative margin flow instead of absolute */}
+                <div className="relative -mt-16 md:-mt-20 px-6 md:px-10 flex flex-col md:flex-row md:items-end gap-6">
+                    <div className="relative group shrink-0">
                         <div className="p-1.5 bg-bg-app rounded-full">
                             <UserAvatar
                                 user={{
@@ -97,25 +158,19 @@ export function ProfilePage() {
                             <Camera className="w-4 h-4" />
                         </button>
                     </div>
-                    <div className="pb-2 mb-1">
-                        <h1 className="text-3xl font-bold text-text-primary tracking-tight">{displayName}</h1>
-                        <p className="text-text-secondary flex items-center gap-2 text-sm mt-1">
-                            <Mail className="w-3.5 h-3.5" /> {email}
-                        </p>
+                    <div className="pb-2 mb-1 mt-2 md:mt-0 pt-16 md:pt-0">
+                        <h1 className="text-3xl font-bold text-text-primary tracking-tight md:text-white md:drop-shadow-md">{displayName}</h1>
+                        {backendUser?.favoriteTeamName && (
+                            <p className="text-text-secondary md:text-white/90 md:drop-shadow-sm flex items-center gap-2 text-sm mt-1">
+                                <Trophy className="w-3.5 h-3.5" /> {backendUser.favoriteTeamName}
+                            </p>
+                        )}
                     </div>
-                </div>
-
-                {/* Actions */}
-                <div className="absolute bottom-4 right-6 hidden md:block">
-                    <Button variant="secondary" onClick={() => setActiveTab('settings')} className="shadow-sm">
-                        <Settings className="w-4 h-4 mr-2" />
-                        Redigera Profil
-                    </Button>
                 </div>
             </div>
 
             {/* Stats Overview */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 pt-6 md:pt-4">
                 <Card className="p-4 flex items-center gap-4 bg-bg-surface border-border-subtle shadow-sm">
                     <div className="p-3 rounded-lg bg-emerald-100 text-emerald-600">
                         <Trophy className="w-5 h-5" />
@@ -146,7 +201,7 @@ export function ProfilePage() {
             </div>
 
             {/* Navigation Tabs (Inline) */}
-            <div className="border-b border-border-subtle flex gap-6 mt-8">
+            <div className="border-b border-border-subtle flex gap-8 mt-12">
                 {['Overview', 'Leagues', 'Settings'].map((tab) => {
                     const key = tab.toLowerCase() as typeof activeTab
                     return (
@@ -165,13 +220,24 @@ export function ProfilePage() {
             </div>
 
             {/* Tab Content */}
-            <div className="min-h-[300px]">
+            <div className="min-h-[300px] mt-8">
                 {activeTab === 'overview' && (
                     <div className="grid gap-6">
+                        {/* Bio Section */}
+                        {backendUser?.bio && (
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Om mig</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <p className="text-text-secondary whitespace-pre-wrap">{backendUser.bio}</p>
+                                </CardContent>
+                            </Card>
+                        )}
                         <Card>
                             <CardHeader>
                                 <CardTitle>Senaste Aktivitet</CardTitle>
-                                <CardDescription>Vad som hänt nyligen (Kommer snart).</CardDescription>
+                                <CardDescription>Vad som hänt nyligen.</CardDescription>
                             </CardHeader>
                             <CardContent>
                                 <div className="text-center py-12 text-text-tertiary border-2 border-dashed border-border-subtle rounded-xl">
@@ -211,20 +277,56 @@ export function ProfilePage() {
                         <Card>
                             <CardHeader>
                                 <CardTitle>Profilinställningar</CardTitle>
+                                <CardDescription>Här kan du uppdatera din publika profil.</CardDescription>
                             </CardHeader>
-                            <CardContent className="space-y-6">
+                            <CardContent className="space-y-8">
                                 <div className="space-y-2">
                                     <Label>Visningsnamn</Label>
-                                    <Input defaultValue={displayName} placeholder="Ange ditt namn" />
+                                    <Input
+                                        value={formName}
+                                        onChange={(e) => setFormName(e.target.value)}
+                                        placeholder="Ange ditt namn"
+                                    />
                                     <p className="text-xs text-text-tertiary">Det namn som visas i topplistor och ligor.</p>
                                 </div>
+
                                 <div className="space-y-2">
-                                    <Label>E-post</Label>
-                                    <Input defaultValue={email || ''} disabled className="bg-bg-subtle" />
-                                    <p className="text-xs text-text-tertiary">E-postadress kan inte ändras.</p>
+                                    <Label>Favoritlag (VM)</Label>
+                                    <select
+                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                        value={formTeamId}
+                                        onChange={(e) => setFormTeamId(e.target.value)}
+                                    >
+                                        <option value="">Välj ett lag...</option>
+                                        {teams?.map((team) => (
+                                            <option key={team.id} value={team.id}>
+                                                {team.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <p className="text-xs text-text-tertiary">Visas på din profil och i vissa topplistor.</p>
                                 </div>
+
+                                <div className="space-y-2">
+                                    <Label>Bio</Label>
+                                    <textarea
+                                        className="flex min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                        value={formBio}
+                                        onChange={(e) => setFormBio(e.target.value)}
+                                        placeholder="Berätta lite om dig själv..."
+                                    />
+                                    <p className="text-xs text-text-tertiary">En kort beskrivning om vem du är.</p>
+                                </div>
+
+
                                 <div className="pt-4">
-                                    <Button className="w-full sm:w-auto">Spara Ändringar</Button>
+                                    <Button
+                                        onClick={handleSaveProfile}
+                                        disabled={isSaving}
+                                        className="w-full sm:w-auto"
+                                    >
+                                        {isSaving ? 'Sparar...' : 'Spara Ändringar'}
+                                    </Button>
                                 </div>
                             </CardContent>
                         </Card>
